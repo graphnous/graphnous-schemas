@@ -108,11 +108,23 @@
         "checksum": {
           "type": "string"
         },
+        "package": {
+          "description": "The qualified name of the package the file declares, as in Package.qualifiedName. Absent for the default package.",
+          "type": "string",
+          "minLength": 1
+        },
+        "imports": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Import"
+          }
+        },
         "classes": {
           "type": "array",
           "items": {
             "$ref": "#/$defs/Class"
-          }
+          },
+          "description": "The top-level classes declared in the file. Nested classes are listed under the class that encloses them."
         }
       }
     },
@@ -127,14 +139,9 @@
         },
         "qualifiedName": {
           "type": "string"
-        },
-        "classes": {
-          "type": "array",
-          "items": {
-            "$ref": "#/$defs/Class"
-          }
         }
-      }
+      },
+      "description": "A package of the module. Its classes are listed under the files that declare them, which name it in File.package."
     },
     "Class": {
       "type": "object",
@@ -142,16 +149,33 @@
       "required": ["name", "qualifiedName"],
       "properties": {
         "name": {
+          "description": "The simple name. An anonymous class has none and uses the part of its binary name after the last $, e.g. \"1\" for \"com.example.Outer$1\".",
           "type": "string",
           "minLength": 1
         },
         "qualifiedName": {
           "type": "string",
-          "minLength": 1
+          "minLength": 1,
+          "description": "The canonical name, e.g. \"com.example.Outer.Inner\" for a member class. Local and anonymous classes have no canonical name and use their binary name, e.g. \"com.example.Outer$1\"."
         },
         "kind": {
           "type": "string",
           "enum": ["CLASS", "INTERFACE", "ENUM", "RECORD", "ANNOTATION"]
+        },
+        "nesting": {
+          "description": "Whether it is declared at the top level of its file, as a member of another class, inside a method body, or as an anonymous class. Absent means TOP_LEVEL.",
+          "type": "string",
+          "enum": ["TOP_LEVEL", "MEMBER", "LOCAL", "ANONYMOUS"],
+          "default": "TOP_LEVEL"
+        },
+        "enclosingMethod": {
+          "description": "For local and anonymous classes, the qualified name of the method whose body declares it.",
+          "type": "string",
+          "minLength": 1
+        },
+        "location": {
+          "description": "Where it is declared in its file.",
+          "$ref": "#/$defs/SourceRange"
         },
         "modifiers": {
           "description": "The modifiers as declared in the source.",
@@ -179,6 +203,20 @@
             "$ref": "#/$defs/TypeRef"
           }
         },
+        "enumConstants": {
+          "description": "The constants of an enum, in declaration order.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/EnumConstant"
+          }
+        },
+        "recordComponents": {
+          "description": "The components of a record, in declaration order.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/RecordComponent"
+          }
+        },
         "methods": {
           "type": "array",
           "items": {
@@ -195,6 +233,13 @@
           "type": "array",
           "items": {
             "$ref": "#/$defs/Annotation"
+          }
+        },
+        "classes": {
+          "description": "The classes nested in this class: member classes, and local and anonymous classes declared in its methods.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Class"
           }
         }
       }
@@ -216,6 +261,10 @@
           "description": "Whether this is a method or a constructor. A constructor has no return type.",
           "type": "string",
           "enum": ["METHOD", "CONSTRUCTOR"]
+        },
+        "location": {
+          "description": "Where it is declared in its file.",
+          "$ref": "#/$defs/SourceRange"
         },
         "modifiers": {
           "description": "The modifiers as declared in the source.",
@@ -241,6 +290,16 @@
           "items": {
             "$ref": "#/$defs/Parameter"
           }
+        },
+        "throws": {
+          "description": "The exception types in its throws clause.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/TypeRef"
+          }
+        },
+        "defaultValue": {
+          "description": "For an element of an annotation type, its default value, with the same encoding as Annotation.arguments."
         },
         "annotations": {
           "type": "array",
@@ -309,6 +368,10 @@
         },
         "qualifiedName": {
           "type": "string"
+        },
+        "location": {
+          "description": "Where it is declared in its file.",
+          "$ref": "#/$defs/SourceRange"
         },
         "modifiers": {
           "description": "The modifiers as declared in the source.",
@@ -480,13 +543,119 @@
       "properties": {
         "name": {
           "type": "string",
-          "minLength": 1
+          "minLength": 1,
+          "description": "The name the build system knows it by, e.g. \"org.slf4j:slf4j-api\" for Maven and Gradle or \"@scope/package\" for npm."
         },
         "version": {
           "type": "string"
         },
         "scope": {
           "type": "string"
+        },
+        "transitive": {
+          "description": "Whether it is pulled in through another dependency rather than declared by the module.",
+          "type": "boolean",
+          "default": false
+        },
+        "module": {
+          "description": "The path of the module in this scan result it refers to, when it is another module of the same target rather than an external library.",
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "SourceRange": {
+      "description": "A range of lines in a file, starting at 1 and inclusive, with optional columns starting at 1.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["startLine", "endLine"],
+      "properties": {
+        "startLine": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "endLine": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "startColumn": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "endColumn": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    "Import": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name"],
+      "properties": {
+        "name": {
+          "description": "The imported name as written, without a trailing wildcard, e.g. \"java.util.List\", \"java.util\" for java.util.*, or \"java.util.Collections.emptyList\" for a static import.",
+          "type": "string",
+          "minLength": 1
+        },
+        "static": {
+          "description": "Whether it is a static import.",
+          "type": "boolean",
+          "default": false
+        },
+        "wildcard": {
+          "description": "Whether it imports every member, as in java.util.*.",
+          "type": "boolean",
+          "default": false
+        },
+        "line": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    "EnumConstant": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "qualifiedName": {
+          "description": "The qualified name of the enum followed by the constant, e.g. \"com.example.Status.OPEN\".",
+          "type": "string"
+        },
+        "location": {
+          "description": "Where it is declared in its file.",
+          "$ref": "#/$defs/SourceRange"
+        },
+        "annotations": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Annotation"
+          }
+        }
+      }
+    },
+    "RecordComponent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "type"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "type": {
+          "$ref": "#/$defs/TypeRef"
+        },
+        "annotations": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Annotation"
+          }
         }
       }
     }
