@@ -118,7 +118,7 @@
         "Field",
         "Annotation"
       ],
-      "description": "Core node label to match: the nodes of one scan. Interfaces, enums and records are Class nodes with their kind in 'kind'; a method's parameters are its properties 'parameterNames' and 'parameterTypes'. Dependencies are shared between scans, so enhancers cannot match them."
+      "description": "Core node label to match: the nodes of one scan. Interfaces, enums, records, structs, traits and type aliases are Class nodes with their kind in 'kind'; top-level functions are Method nodes with kind FUNCTION and top-level variables are Field nodes; a method's parameters are its properties 'parameterNames' and 'parameterTypes'. Dependencies are shared between scans, so enhancers cannot match them."
     },
 
     "propertyPath": {
