@@ -120,6 +120,11 @@
         "checksum": {
           "type": "string"
         },
+        "lineCount": {
+          "description": "The number of lines in the file. A file starts on line 1 and ends on line lineCount.",
+          "type": "integer",
+          "minimum": 0
+        },
         "package": {
           "description": "The qualified name of the package the file declares or belongs to, as in Package.qualifiedName. Absent for the Java default package and for languages without packages.",
           "type": "string",
@@ -184,6 +189,26 @@
           "minLength": 1,
           "description": "The canonical name, e.g. \"com.example.Outer.Inner\" for a member class. Local and anonymous classes have no canonical name and use their binary name, e.g. \"com.example.Outer$1\"."
         },
+        "startLine": {
+          "description": "The line the declaration, including its annotations and body, starts on, starting at 1.",
+          "type": "integer",
+          "minimum": 1
+        },
+        "endLine": {
+          "description": "The line the declaration, including its annotations and body, ends on, inclusive.",
+          "type": "integer",
+          "minimum": 1
+        },
+        "startColumn": {
+          "description": "The column on startLine it starts at, starting at 1.",
+          "type": "integer",
+          "minimum": 1
+        },
+        "endColumn": {
+          "description": "The column on endLine it ends at, inclusive.",
+          "type": "integer",
+          "minimum": 1
+        },
         "kind": {
           "description": "CLASS, INTERFACE, ENUM, RECORD and ANNOTATION as in Java; STRUCT for Go and Rust structs; TRAIT for Rust traits; TYPE_ALIAS for a named type that is none of these, such as a TypeScript type alias, a Go defined type like \"type Celsius float64\" or a Rust type alias, with the type it names in aliasedType. TypeScript and Python classes are CLASS, Python protocols are INTERFACE.",
           "type": "string",
@@ -208,10 +233,6 @@
           "description": "For local and anonymous classes, the qualified name of the method whose body declares it.",
           "type": "string",
           "minLength": 1
-        },
-        "location": {
-          "description": "Where it is declared in its file.",
-          "$ref": "#/$defs/SourceRange"
         },
         "modifiers": {
           "description": "The modifiers as declared in the source.",
@@ -286,6 +307,11 @@
             "$ref": "#/$defs/Class"
           }
         }
+      },
+      "dependentRequired": {
+        "endLine": ["startLine"],
+        "startColumn": ["startLine"],
+        "endColumn": ["endLine"]
       }
     },
     "Method": {
@@ -301,14 +327,30 @@
           "type": "string",
           "minLength": 1
         },
+        "startLine": {
+          "description": "The line the declaration, including its annotations and body, starts on, starting at 1.",
+          "type": "integer",
+          "minimum": 1
+        },
+        "endLine": {
+          "description": "The line the declaration, including its annotations and body, ends on, inclusive.",
+          "type": "integer",
+          "minimum": 1
+        },
+        "startColumn": {
+          "description": "The column on startLine it starts at, starting at 1.",
+          "type": "integer",
+          "minimum": 1
+        },
+        "endColumn": {
+          "description": "The column on endLine it ends at, inclusive.",
+          "type": "integer",
+          "minimum": 1
+        },
         "kind": {
           "description": "METHOD for a method, CONSTRUCTOR for a constructor (Python __init__, TypeScript constructor), FUNCTION for a function declared outside any class. A constructor has no return type.",
           "type": "string",
           "enum": ["METHOD", "CONSTRUCTOR", "FUNCTION"]
-        },
-        "location": {
-          "description": "Where it is declared in its file.",
-          "$ref": "#/$defs/SourceRange"
         },
         "modifiers": {
           "description": "The modifiers as declared in the source.",
@@ -372,6 +414,11 @@
             "$ref": "#/$defs/TypeUse"
           }
         }
+      },
+      "dependentRequired": {
+        "endLine": ["startLine"],
+        "startColumn": ["startLine"],
+        "endColumn": ["endLine"]
       }
     },
     "Parameter": {
@@ -391,12 +438,37 @@
           "description": "The qualified name of the method followed by the name of the parameter, e.g. \"com.example.Orders.find(java.lang.String).id\".",
           "type": "string"
         },
+        "startLine": {
+          "description": "The line the declaration starts on, starting at 1.",
+          "type": "integer",
+          "minimum": 1
+        },
+        "endLine": {
+          "description": "The line the declaration ends on, inclusive.",
+          "type": "integer",
+          "minimum": 1
+        },
+        "startColumn": {
+          "description": "The column on startLine it starts at, starting at 1.",
+          "type": "integer",
+          "minimum": 1
+        },
+        "endColumn": {
+          "description": "The column on endLine it ends at, inclusive.",
+          "type": "integer",
+          "minimum": 1
+        },
         "annotations": {
           "type": "array",
           "items": {
             "$ref": "#/$defs/Annotation"
           }
         }
+      },
+      "dependentRequired": {
+        "endLine": ["startLine"],
+        "startColumn": ["startLine"],
+        "endColumn": ["endLine"]
       }
     },
     "Field": {
@@ -415,9 +487,25 @@
         "qualifiedName": {
           "type": "string"
         },
-        "location": {
-          "description": "Where it is declared in its file.",
-          "$ref": "#/$defs/SourceRange"
+        "startLine": {
+          "description": "The line the declaration, including its annotations and initializer, starts on, starting at 1.",
+          "type": "integer",
+          "minimum": 1
+        },
+        "endLine": {
+          "description": "The line the declaration, including its annotations and initializer, ends on, inclusive.",
+          "type": "integer",
+          "minimum": 1
+        },
+        "startColumn": {
+          "description": "The column on startLine it starts at, starting at 1.",
+          "type": "integer",
+          "minimum": 1
+        },
+        "endColumn": {
+          "description": "The column on endLine it ends at, inclusive.",
+          "type": "integer",
+          "minimum": 1
         },
         "modifiers": {
           "description": "The modifiers as declared in the source.",
@@ -432,6 +520,11 @@
             "$ref": "#/$defs/Annotation"
           }
         }
+      },
+      "dependentRequired": {
+        "endLine": ["startLine"],
+        "startColumn": ["startLine"],
+        "endColumn": ["endLine"]
       }
     },
     "TypeRef": {
@@ -471,8 +564,23 @@
           "type": "string",
           "enum": ["METHOD", "CONSTRUCTOR", "METHOD_REFERENCE"]
         },
-        "line": {
-          "description": "The line the call, access or use is on, starting at 1.",
+        "startLine": {
+          "description": "The line the call expression, including its arguments, starts on, starting at 1.",
+          "type": "integer",
+          "minimum": 1
+        },
+        "endLine": {
+          "description": "The line the call expression, including its arguments, ends on, inclusive.",
+          "type": "integer",
+          "minimum": 1
+        },
+        "startColumn": {
+          "description": "The column on startLine it starts at, starting at 1.",
+          "type": "integer",
+          "minimum": 1
+        },
+        "endColumn": {
+          "description": "The column on endLine it ends at, inclusive.",
           "type": "integer",
           "minimum": 1
         },
@@ -481,6 +589,11 @@
           "type": "boolean",
           "default": true
         }
+      },
+      "dependentRequired": {
+        "endLine": ["startLine"],
+        "startColumn": ["startLine"],
+        "endColumn": ["endLine"]
       }
     },
     "FieldAccess": {
@@ -498,8 +611,23 @@
           "type": "string",
           "enum": ["READ", "WRITE", "READ_WRITE"]
         },
-        "line": {
-          "description": "The line the call, access or use is on, starting at 1.",
+        "startLine": {
+          "description": "The line the field access starts on, starting at 1.",
+          "type": "integer",
+          "minimum": 1
+        },
+        "endLine": {
+          "description": "The line the field access ends on, inclusive.",
+          "type": "integer",
+          "minimum": 1
+        },
+        "startColumn": {
+          "description": "The column on startLine it starts at, starting at 1.",
+          "type": "integer",
+          "minimum": 1
+        },
+        "endColumn": {
+          "description": "The column on endLine it ends at, inclusive.",
           "type": "integer",
           "minimum": 1
         },
@@ -508,6 +636,11 @@
           "type": "boolean",
           "default": true
         }
+      },
+      "dependentRequired": {
+        "endLine": ["startLine"],
+        "startColumn": ["startLine"],
+        "endColumn": ["endLine"]
       }
     },
     "TypeUse": {
@@ -533,8 +666,23 @@
             "OTHER"
           ]
         },
-        "line": {
-          "description": "The line the call, access or use is on, starting at 1.",
+        "startLine": {
+          "description": "The line the type starts on, starting at 1.",
+          "type": "integer",
+          "minimum": 1
+        },
+        "endLine": {
+          "description": "The line the type ends on, inclusive.",
+          "type": "integer",
+          "minimum": 1
+        },
+        "startColumn": {
+          "description": "The column on startLine it starts at, starting at 1.",
+          "type": "integer",
+          "minimum": 1
+        },
+        "endColumn": {
+          "description": "The column on endLine it ends at, inclusive.",
           "type": "integer",
           "minimum": 1
         },
@@ -543,6 +691,11 @@
           "type": "boolean",
           "default": true
         }
+      },
+      "dependentRequired": {
+        "endLine": ["startLine"],
+        "startColumn": ["startLine"],
+        "endColumn": ["endLine"]
       }
     },
     "Modifier": {
@@ -586,12 +739,37 @@
         "qualifiedName": {
           "type": "string"
         },
+        "startLine": {
+          "description": "The line the annotation, including its arguments, starts on, starting at 1.",
+          "type": "integer",
+          "minimum": 1
+        },
+        "endLine": {
+          "description": "The line the annotation, including its arguments, ends on, inclusive.",
+          "type": "integer",
+          "minimum": 1
+        },
+        "startColumn": {
+          "description": "The column on startLine it starts at, starting at 1.",
+          "type": "integer",
+          "minimum": 1
+        },
+        "endColumn": {
+          "description": "The column on endLine it ends at, inclusive.",
+          "type": "integer",
+          "minimum": 1
+        },
         "arguments": {
           "type": "object",
           "additionalProperties": true
         }
       },
-      "description": "A Java annotation, a TypeScript or Python decorator, or a Rust attribute such as #[derive(Debug)]."
+      "description": "A Java annotation, a TypeScript or Python decorator, or a Rust attribute such as #[derive(Debug)].",
+      "dependentRequired": {
+        "endLine": ["startLine"],
+        "startColumn": ["startLine"],
+        "endColumn": ["endLine"]
+      }
     },
     "Dependency": {
       "type": "object",
@@ -621,30 +799,6 @@
         }
       }
     },
-    "SourceRange": {
-      "description": "A range of lines in a file, starting at 1 and inclusive, with optional columns starting at 1.",
-      "type": "object",
-      "additionalProperties": false,
-      "required": ["startLine", "endLine"],
-      "properties": {
-        "startLine": {
-          "type": "integer",
-          "minimum": 1
-        },
-        "endLine": {
-          "type": "integer",
-          "minimum": 1
-        },
-        "startColumn": {
-          "type": "integer",
-          "minimum": 1
-        },
-        "endColumn": {
-          "type": "integer",
-          "minimum": 1
-        }
-      }
-    },
     "Import": {
       "type": "object",
       "additionalProperties": false,
@@ -665,10 +819,31 @@
           "type": "boolean",
           "default": false
         },
-        "line": {
+        "startLine": {
+          "description": "The line the import statement starts on, starting at 1.",
+          "type": "integer",
+          "minimum": 1
+        },
+        "endLine": {
+          "description": "The line the import statement ends on, inclusive.",
+          "type": "integer",
+          "minimum": 1
+        },
+        "startColumn": {
+          "description": "The column on startLine it starts at, starting at 1.",
+          "type": "integer",
+          "minimum": 1
+        },
+        "endColumn": {
+          "description": "The column on endLine it ends at, inclusive.",
           "type": "integer",
           "minimum": 1
         }
+      },
+      "dependentRequired": {
+        "endLine": ["startLine"],
+        "startColumn": ["startLine"],
+        "endColumn": ["endLine"]
       }
     },
     "EnumConstant": {
@@ -684,9 +859,25 @@
           "description": "The qualified name of the enum followed by the constant, e.g. \"com.example.Status.OPEN\".",
           "type": "string"
         },
-        "location": {
-          "description": "Where it is declared in its file.",
-          "$ref": "#/$defs/SourceRange"
+        "startLine": {
+          "description": "The line the constant, including its arguments and body, starts on, starting at 1.",
+          "type": "integer",
+          "minimum": 1
+        },
+        "endLine": {
+          "description": "The line the constant, including its arguments and body, ends on, inclusive.",
+          "type": "integer",
+          "minimum": 1
+        },
+        "startColumn": {
+          "description": "The column on startLine it starts at, starting at 1.",
+          "type": "integer",
+          "minimum": 1
+        },
+        "endColumn": {
+          "description": "The column on endLine it ends at, inclusive.",
+          "type": "integer",
+          "minimum": 1
         },
         "annotations": {
           "type": "array",
@@ -694,6 +885,11 @@
             "$ref": "#/$defs/Annotation"
           }
         }
+      },
+      "dependentRequired": {
+        "endLine": ["startLine"],
+        "startColumn": ["startLine"],
+        "endColumn": ["endLine"]
       }
     },
     "RecordComponent": {
@@ -708,12 +904,37 @@
         "type": {
           "$ref": "#/$defs/TypeRef"
         },
+        "startLine": {
+          "description": "The line the component starts on, starting at 1.",
+          "type": "integer",
+          "minimum": 1
+        },
+        "endLine": {
+          "description": "The line the component ends on, inclusive.",
+          "type": "integer",
+          "minimum": 1
+        },
+        "startColumn": {
+          "description": "The column on startLine it starts at, starting at 1.",
+          "type": "integer",
+          "minimum": 1
+        },
+        "endColumn": {
+          "description": "The column on endLine it ends at, inclusive.",
+          "type": "integer",
+          "minimum": 1
+        },
         "annotations": {
           "type": "array",
           "items": {
             "$ref": "#/$defs/Annotation"
           }
         }
+      },
+      "dependentRequired": {
+        "endLine": ["startLine"],
+        "startColumn": ["startLine"],
+        "endColumn": ["endLine"]
       }
     }
   }
