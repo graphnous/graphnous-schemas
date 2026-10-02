@@ -8,7 +8,8 @@
     "validate:json": "prettier --check \"**/*.{json,yaml,yml}\"",
     "validate:schemas": "node scripts/validate-schemas.mjs",
     "validate:openapi": "redocly lint openapi/v1.yaml",
-    "format": "prettier --write \"**/*.{json,yaml,yml}\""
+    "format": "prettier --write \"**/*.{json,yaml,yml}\"",
+    "build:site": "node scripts/build-site.mjs"
   },
   "devDependencies": {
     "@redocly/cli": "^2.54.3",
