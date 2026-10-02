@@ -169,16 +169,14 @@
           }
         },
         "superClass": {
-          "description": "The qualified name of the class it extends, with its type arguments, e.g. \"java.util.AbstractList<com.example.Order>\". Only for classes.",
-          "type": "string",
-          "minLength": 1
+          "description": "The class it extends. Only for classes.",
+          "$ref": "#/$defs/TypeRef"
         },
         "interfaces": {
-          "description": "The qualified names of the interfaces it implements, or for an interface those it extends, with their type arguments.",
+          "description": "The interfaces it implements, or for an interface those it extends.",
           "type": "array",
           "items": {
-            "type": "string",
-            "minLength": 1
+            "$ref": "#/$defs/TypeRef"
           }
         },
         "methods": {
@@ -235,7 +233,8 @@
           }
         },
         "returnType": {
-          "type": "string"
+          "description": "The declared return type. Absent for constructors.",
+          "$ref": "#/$defs/TypeRef"
         },
         "parameters": {
           "type": "array",
@@ -247,6 +246,27 @@
           "type": "array",
           "items": {
             "$ref": "#/$defs/Annotation"
+          }
+        },
+        "calls": {
+          "description": "The methods and constructors called from the body, one entry per call site. Calls inside lambdas and anonymous classes declared in the body belong to this method.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Call"
+          }
+        },
+        "fieldAccesses": {
+          "description": "The fields read or written by the body, one entry per access.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/FieldAccess"
+          }
+        },
+        "typeUses": {
+          "description": "The types the body refers to other than through its calls and field accesses, such as local variables, casts and instanceof checks, one entry per use.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/TypeUse"
           }
         }
       }
@@ -261,8 +281,7 @@
           "minLength": 1
         },
         "type": {
-          "type": "string",
-          "minLength": 1
+          "$ref": "#/$defs/TypeRef"
         },
         "qualifiedName": {
           "description": "The qualified name of the method followed by the name of the parameter, e.g. \"com.example.Orders.find(java.lang.String).id\".",
@@ -286,8 +305,7 @@
           "minLength": 1
         },
         "type": {
-          "type": "string",
-          "minLength": 1
+          "$ref": "#/$defs/TypeRef"
         },
         "qualifiedName": {
           "type": "string"
@@ -304,6 +322,117 @@
           "items": {
             "$ref": "#/$defs/Annotation"
           }
+        }
+      }
+    },
+    "TypeRef": {
+      "description": "A type as declared, with the classes it refers to.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name"],
+      "properties": {
+        "name": {
+          "description": "The type with qualified names and its type arguments, e.g. \"java.util.Map<java.lang.String, com.example.Order>[]\".",
+          "type": "string",
+          "minLength": 1
+        },
+        "references": {
+          "description": "The qualified names of every class the type refers to, including through type arguments, bounds and array element types, e.g. [\"java.util.Map\", \"java.lang.String\", \"com.example.Order\"]. Primitive types and type variables are left out.",
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "Call": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["target"],
+      "properties": {
+        "target": {
+          "description": "The qualified name of the method or constructor called, as in Method.qualifiedName, e.g. \"com.example.OrderRepository.findById(java.lang.String)\".",
+          "type": "string",
+          "minLength": 1
+        },
+        "kind": {
+          "description": "METHOD for a method call, CONSTRUCTOR for new, this(...) and super(...), METHOD_REFERENCE for a method or constructor reference such as Order::getId.",
+          "type": "string",
+          "enum": ["METHOD", "CONSTRUCTOR", "METHOD_REFERENCE"]
+        },
+        "line": {
+          "description": "The line the call, access or use is on, starting at 1.",
+          "type": "integer",
+          "minimum": 1
+        },
+        "resolved": {
+          "description": "Whether the scanner resolved the target. When false, the target is the name as written in the source, e.g. because the library declaring it is not on the classpath.",
+          "type": "boolean",
+          "default": true
+        }
+      }
+    },
+    "FieldAccess": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["target", "access"],
+      "properties": {
+        "target": {
+          "description": "The qualified name of the field, as in Field.qualifiedName, e.g. \"com.example.Order.id\".",
+          "type": "string",
+          "minLength": 1
+        },
+        "access": {
+          "description": "READ, WRITE, or READ_WRITE for compound assignments and increments such as count++.",
+          "type": "string",
+          "enum": ["READ", "WRITE", "READ_WRITE"]
+        },
+        "line": {
+          "description": "The line the call, access or use is on, starting at 1.",
+          "type": "integer",
+          "minimum": 1
+        },
+        "resolved": {
+          "description": "Whether the scanner resolved the target. When false, the target is the name as written in the source, e.g. because the library declaring it is not on the classpath.",
+          "type": "boolean",
+          "default": true
+        }
+      }
+    },
+    "TypeUse": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["target", "kind"],
+      "properties": {
+        "target": {
+          "description": "The qualified name of the class used.",
+          "type": "string",
+          "minLength": 1
+        },
+        "kind": {
+          "description": "How the body uses the type. Types in the signature are in returnType and the parameters, and instantiations are CONSTRUCTOR calls.",
+          "type": "string",
+          "enum": [
+            "LOCAL_VARIABLE",
+            "CAST",
+            "INSTANCEOF",
+            "CLASS_LITERAL",
+            "CATCH",
+            "TYPE_ARGUMENT",
+            "OTHER"
+          ]
+        },
+        "line": {
+          "description": "The line the call, access or use is on, starting at 1.",
+          "type": "integer",
+          "minimum": 1
+        },
+        "resolved": {
+          "description": "Whether the scanner resolved the target. When false, the target is the name as written in the source, e.g. because the library declaring it is not on the classpath.",
+          "type": "boolean",
+          "default": true
         }
       }
     },
