@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://graphnous.dev/schema/scan/scan-result.schema.json",
   "title": "GraphNous Scan Result",
-  "description": "Result produced by a GraphNous scanner for a single scan target.",
+  "description": "Result produced by a GraphNous scanner for a single scan target. Qualified names identify declarations across the result, so calls, field accesses and type references can be linked to them. They follow the conventions of each language: Java uses package and class names, and methods add their parameter types, e.g. \"com.example.Orders.find(java.lang.String)\". TypeScript and JavaScript use the file path relative to the target without its extension, a colon, then the dotted name, e.g. \"src/orders:Orders.find\". Python uses the dotted module path, e.g. \"app.orders.Orders.find\". Go uses the package import path, then the dotted name, e.g. \"example.com/app/orders.Orders.Find\". Rust uses the module path, e.g. \"orders::Orders::find\" in the crate being scanned. Only Java names include parameter types, as the other languages have no overloading.",
   "type": "object",
   "additionalProperties": false,
   "required": ["format", "version", "target", "modules"],
@@ -45,7 +45,19 @@
         },
         "buildSystem": {
           "type": "string",
-          "enum": ["MAVEN", "GRADLE", "NPM", "PNPM", "YARN"]
+          "enum": [
+            "MAVEN",
+            "GRADLE",
+            "NPM",
+            "PNPM",
+            "YARN",
+            "BUN",
+            "PIP",
+            "POETRY",
+            "UV",
+            "GO",
+            "CARGO"
+          ]
         },
         "buildSystemVersion": {
           "type": "string"
@@ -108,10 +120,41 @@
         "checksum": {
           "type": "string"
         },
+        "lineCount": {
+          "description": "The number of lines in the file. A file starts on line 1 and ends on line lineCount.",
+          "type": "integer",
+          "minimum": 0
+        },
+        "package": {
+          "description": "The qualified name of the package the file declares or belongs to, as in Package.qualifiedName. Absent for the Java default package and for languages without packages.",
+          "type": "string",
+          "minLength": 1
+        },
+        "imports": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Import"
+          }
+        },
         "classes": {
           "type": "array",
           "items": {
             "$ref": "#/$defs/Class"
+          },
+          "description": "The top-level classes, interfaces, enums, structs, traits and type aliases declared in the file. Nested ones are listed under the class that encloses them."
+        },
+        "functions": {
+          "description": "The functions declared at the top level of the file, outside any class, with kind FUNCTION. Go methods with a receiver and Rust methods in impl blocks are listed under the class of their receiver or self type instead.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Method"
+          }
+        },
+        "variables": {
+          "description": "The variables and constants declared at the top level of the file, outside any class.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Field"
           }
         }
       }
@@ -127,14 +170,9 @@
         },
         "qualifiedName": {
           "type": "string"
-        },
-        "classes": {
-          "type": "array",
-          "items": {
-            "$ref": "#/$defs/Class"
-          }
         }
-      }
+      },
+      "description": "A package of the module: a Java, Python or Go package, or a Rust module. TypeScript and JavaScript have none. Its classes are listed under the files that declare them, which name it in File.package."
     },
     "Class": {
       "type": "object",
@@ -142,16 +180,59 @@
       "required": ["name", "qualifiedName"],
       "properties": {
         "name": {
+          "description": "The simple name. An anonymous class has none and uses the part of its binary name after the last $, e.g. \"1\" for \"com.example.Outer$1\".",
           "type": "string",
           "minLength": 1
         },
         "qualifiedName": {
           "type": "string",
-          "minLength": 1
+          "minLength": 1,
+          "description": "The canonical name, e.g. \"com.example.Outer.Inner\" for a member class. Local and anonymous classes have no canonical name and use their binary name, e.g. \"com.example.Outer$1\"."
+        },
+        "startLine": {
+          "description": "The line the declaration, including its annotations and body, starts on, starting at 1.",
+          "type": "integer",
+          "minimum": 1
+        },
+        "endLine": {
+          "description": "The line the declaration, including its annotations and body, ends on, inclusive.",
+          "type": "integer",
+          "minimum": 1
+        },
+        "startColumn": {
+          "description": "The column on startLine it starts at, starting at 1.",
+          "type": "integer",
+          "minimum": 1
+        },
+        "endColumn": {
+          "description": "The column on endLine it ends at, inclusive.",
+          "type": "integer",
+          "minimum": 1
         },
         "kind": {
+          "description": "CLASS, INTERFACE, ENUM, RECORD and ANNOTATION as in Java; STRUCT for Go and Rust structs; TRAIT for Rust traits; TYPE_ALIAS for a named type that is none of these, such as a TypeScript type alias, a Go defined type like \"type Celsius float64\" or a Rust type alias, with the type it names in aliasedType. TypeScript and Python classes are CLASS, Python protocols are INTERFACE.",
           "type": "string",
-          "enum": ["CLASS", "INTERFACE", "ENUM", "RECORD", "ANNOTATION"]
+          "enum": [
+            "CLASS",
+            "INTERFACE",
+            "ENUM",
+            "RECORD",
+            "ANNOTATION",
+            "STRUCT",
+            "TRAIT",
+            "TYPE_ALIAS"
+          ]
+        },
+        "nesting": {
+          "description": "Whether it is declared at the top level of its file, as a member of another class, inside a method body, or as an anonymous class. Absent means TOP_LEVEL.",
+          "type": "string",
+          "enum": ["TOP_LEVEL", "MEMBER", "LOCAL", "ANONYMOUS"],
+          "default": "TOP_LEVEL"
+        },
+        "enclosingMethod": {
+          "description": "For local and anonymous classes, the qualified name of the method whose body declares it.",
+          "type": "string",
+          "minLength": 1
         },
         "modifiers": {
           "description": "The modifiers as declared in the source.",
@@ -168,17 +249,36 @@
             "minLength": 1
           }
         },
-        "superClass": {
-          "description": "The qualified name of the class it extends, with its type arguments, e.g. \"java.util.AbstractList<com.example.Order>\". Only for classes.",
-          "type": "string",
-          "minLength": 1
-        },
-        "interfaces": {
-          "description": "The qualified names of the interfaces it implements, or for an interface those it extends, with their type arguments.",
+        "superClasses": {
+          "description": "The classes it extends, in declaration order. Java and TypeScript classes have at most one, Python classes can have several.",
           "type": "array",
           "items": {
-            "type": "string",
-            "minLength": 1
+            "$ref": "#/$defs/TypeRef"
+          }
+        },
+        "interfaces": {
+          "description": "The interfaces it implements, or for an interface those it extends. For Rust, the traits it implements or, for a trait, its supertraits. For Go, the interfaces an interface embeds.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/TypeRef"
+          }
+        },
+        "aliasedType": {
+          "description": "For a TYPE_ALIAS, the type it names.",
+          "$ref": "#/$defs/TypeRef"
+        },
+        "enumConstants": {
+          "description": "The constants of an enum, in declaration order.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/EnumConstant"
+          }
+        },
+        "recordComponents": {
+          "description": "The components of a record, in declaration order.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/RecordComponent"
           }
         },
         "methods": {
@@ -188,6 +288,7 @@
           }
         },
         "fields": {
+          "description": "Its fields, or for TypeScript its properties. A Go embedded field is a field named after its type.",
           "type": "array",
           "items": {
             "$ref": "#/$defs/Field"
@@ -198,7 +299,19 @@
           "items": {
             "$ref": "#/$defs/Annotation"
           }
+        },
+        "classes": {
+          "description": "The classes nested in this class: member classes, and local and anonymous classes declared in its methods.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Class"
+          }
         }
+      },
+      "dependentRequired": {
+        "endLine": ["startLine"],
+        "startColumn": ["startLine"],
+        "endColumn": ["endLine"]
       }
     },
     "Method": {
@@ -214,10 +327,30 @@
           "type": "string",
           "minLength": 1
         },
+        "startLine": {
+          "description": "The line the declaration, including its annotations and body, starts on, starting at 1.",
+          "type": "integer",
+          "minimum": 1
+        },
+        "endLine": {
+          "description": "The line the declaration, including its annotations and body, ends on, inclusive.",
+          "type": "integer",
+          "minimum": 1
+        },
+        "startColumn": {
+          "description": "The column on startLine it starts at, starting at 1.",
+          "type": "integer",
+          "minimum": 1
+        },
+        "endColumn": {
+          "description": "The column on endLine it ends at, inclusive.",
+          "type": "integer",
+          "minimum": 1
+        },
         "kind": {
-          "description": "Whether this is a method or a constructor. A constructor has no return type.",
+          "description": "METHOD for a method, CONSTRUCTOR for a constructor (Python __init__, TypeScript constructor), FUNCTION for a function declared outside any class. A constructor has no return type.",
           "type": "string",
-          "enum": ["METHOD", "CONSTRUCTOR"]
+          "enum": ["METHOD", "CONSTRUCTOR", "FUNCTION"]
         },
         "modifiers": {
           "description": "The modifiers as declared in the source.",
@@ -235,7 +368,8 @@
           }
         },
         "returnType": {
-          "type": "string"
+          "description": "The declared return type. Absent for constructors, and when the source declares none and the scanner cannot infer one.",
+          "$ref": "#/$defs/TypeRef"
         },
         "parameters": {
           "type": "array",
@@ -243,30 +377,86 @@
             "$ref": "#/$defs/Parameter"
           }
         },
+        "throws": {
+          "description": "The exception types in its throws clause.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/TypeRef"
+          }
+        },
+        "defaultValue": {
+          "description": "For an element of an annotation type, its default value, with the same encoding as Annotation.arguments."
+        },
         "annotations": {
           "type": "array",
           "items": {
             "$ref": "#/$defs/Annotation"
           }
+        },
+        "calls": {
+          "description": "The methods and constructors called from the body, one entry per call site. Calls inside lambdas and anonymous classes declared in the body belong to this method.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Call"
+          }
+        },
+        "fieldAccesses": {
+          "description": "The fields read or written by the body, one entry per access.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/FieldAccess"
+          }
+        },
+        "typeUses": {
+          "description": "The types the body refers to other than through its calls and field accesses, such as local variables, casts and instanceof checks, one entry per use.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/TypeUse"
+          }
         }
+      },
+      "dependentRequired": {
+        "endLine": ["startLine"],
+        "startColumn": ["startLine"],
+        "endColumn": ["endLine"]
       }
     },
     "Parameter": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["name", "type"],
+      "required": ["name"],
       "properties": {
         "name": {
           "type": "string",
           "minLength": 1
         },
         "type": {
-          "type": "string",
-          "minLength": 1
+          "description": "The declared type. Absent when the source declares none and the scanner cannot infer one, as is common in Python and JavaScript.",
+          "$ref": "#/$defs/TypeRef"
         },
         "qualifiedName": {
           "description": "The qualified name of the method followed by the name of the parameter, e.g. \"com.example.Orders.find(java.lang.String).id\".",
           "type": "string"
+        },
+        "startLine": {
+          "description": "The line the declaration starts on, starting at 1.",
+          "type": "integer",
+          "minimum": 1
+        },
+        "endLine": {
+          "description": "The line the declaration ends on, inclusive.",
+          "type": "integer",
+          "minimum": 1
+        },
+        "startColumn": {
+          "description": "The column on startLine it starts at, starting at 1.",
+          "type": "integer",
+          "minimum": 1
+        },
+        "endColumn": {
+          "description": "The column on endLine it ends at, inclusive.",
+          "type": "integer",
+          "minimum": 1
         },
         "annotations": {
           "type": "array",
@@ -274,23 +464,48 @@
             "$ref": "#/$defs/Annotation"
           }
         }
+      },
+      "dependentRequired": {
+        "endLine": ["startLine"],
+        "startColumn": ["startLine"],
+        "endColumn": ["endLine"]
       }
     },
     "Field": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["name", "type"],
+      "required": ["name"],
       "properties": {
         "name": {
           "type": "string",
           "minLength": 1
         },
         "type": {
-          "type": "string",
-          "minLength": 1
+          "description": "The declared type. Absent when the source declares none and the scanner cannot infer one, as is common in Python and JavaScript.",
+          "$ref": "#/$defs/TypeRef"
         },
         "qualifiedName": {
           "type": "string"
+        },
+        "startLine": {
+          "description": "The line the declaration, including its annotations and initializer, starts on, starting at 1.",
+          "type": "integer",
+          "minimum": 1
+        },
+        "endLine": {
+          "description": "The line the declaration, including its annotations and initializer, ends on, inclusive.",
+          "type": "integer",
+          "minimum": 1
+        },
+        "startColumn": {
+          "description": "The column on startLine it starts at, starting at 1.",
+          "type": "integer",
+          "minimum": 1
+        },
+        "endColumn": {
+          "description": "The column on endLine it ends at, inclusive.",
+          "type": "integer",
+          "minimum": 1
         },
         "modifiers": {
           "description": "The modifiers as declared in the source.",
@@ -305,14 +520,192 @@
             "$ref": "#/$defs/Annotation"
           }
         }
+      },
+      "dependentRequired": {
+        "endLine": ["startLine"],
+        "startColumn": ["startLine"],
+        "endColumn": ["endLine"]
+      }
+    },
+    "TypeRef": {
+      "description": "A type as declared, with the classes it refers to.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name"],
+      "properties": {
+        "name": {
+          "description": "The type with qualified names and its type arguments, e.g. \"java.util.Map<java.lang.String, com.example.Order>[]\".",
+          "type": "string",
+          "minLength": 1
+        },
+        "references": {
+          "description": "The qualified names of every class the type refers to, including through type arguments, bounds and array element types, e.g. [\"java.util.Map\", \"java.lang.String\", \"com.example.Order\"]. Primitive types and type variables are left out.",
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "Call": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["target"],
+      "properties": {
+        "target": {
+          "description": "The qualified name of the method or constructor called, as in Method.qualifiedName, e.g. \"com.example.OrderRepository.findById(java.lang.String)\".",
+          "type": "string",
+          "minLength": 1
+        },
+        "kind": {
+          "description": "METHOD for a method call, CONSTRUCTOR for new, this(...) and super(...), METHOD_REFERENCE for a method or constructor reference such as Order::getId.",
+          "type": "string",
+          "enum": ["METHOD", "CONSTRUCTOR", "METHOD_REFERENCE"]
+        },
+        "startLine": {
+          "description": "The line the call expression, including its arguments, starts on, starting at 1.",
+          "type": "integer",
+          "minimum": 1
+        },
+        "endLine": {
+          "description": "The line the call expression, including its arguments, ends on, inclusive.",
+          "type": "integer",
+          "minimum": 1
+        },
+        "startColumn": {
+          "description": "The column on startLine it starts at, starting at 1.",
+          "type": "integer",
+          "minimum": 1
+        },
+        "endColumn": {
+          "description": "The column on endLine it ends at, inclusive.",
+          "type": "integer",
+          "minimum": 1
+        },
+        "resolved": {
+          "description": "Whether the scanner resolved the target. When false, the target is the name as written in the source, e.g. because the library declaring it is not on the classpath.",
+          "type": "boolean",
+          "default": true
+        }
+      },
+      "dependentRequired": {
+        "endLine": ["startLine"],
+        "startColumn": ["startLine"],
+        "endColumn": ["endLine"]
+      }
+    },
+    "FieldAccess": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["target", "access"],
+      "properties": {
+        "target": {
+          "description": "The qualified name of the field, as in Field.qualifiedName, e.g. \"com.example.Order.id\".",
+          "type": "string",
+          "minLength": 1
+        },
+        "access": {
+          "description": "READ, WRITE, or READ_WRITE for compound assignments and increments such as count++.",
+          "type": "string",
+          "enum": ["READ", "WRITE", "READ_WRITE"]
+        },
+        "startLine": {
+          "description": "The line the field access starts on, starting at 1.",
+          "type": "integer",
+          "minimum": 1
+        },
+        "endLine": {
+          "description": "The line the field access ends on, inclusive.",
+          "type": "integer",
+          "minimum": 1
+        },
+        "startColumn": {
+          "description": "The column on startLine it starts at, starting at 1.",
+          "type": "integer",
+          "minimum": 1
+        },
+        "endColumn": {
+          "description": "The column on endLine it ends at, inclusive.",
+          "type": "integer",
+          "minimum": 1
+        },
+        "resolved": {
+          "description": "Whether the scanner resolved the target. When false, the target is the name as written in the source, e.g. because the library declaring it is not on the classpath.",
+          "type": "boolean",
+          "default": true
+        }
+      },
+      "dependentRequired": {
+        "endLine": ["startLine"],
+        "startColumn": ["startLine"],
+        "endColumn": ["endLine"]
+      }
+    },
+    "TypeUse": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["target", "kind"],
+      "properties": {
+        "target": {
+          "description": "The qualified name of the class used.",
+          "type": "string",
+          "minLength": 1
+        },
+        "kind": {
+          "description": "How the body uses the type. Types in the signature are in returnType and the parameters, and instantiations are CONSTRUCTOR calls.",
+          "type": "string",
+          "enum": [
+            "LOCAL_VARIABLE",
+            "CAST",
+            "INSTANCEOF",
+            "CLASS_LITERAL",
+            "CATCH",
+            "TYPE_ARGUMENT",
+            "OTHER"
+          ]
+        },
+        "startLine": {
+          "description": "The line the type starts on, starting at 1.",
+          "type": "integer",
+          "minimum": 1
+        },
+        "endLine": {
+          "description": "The line the type ends on, inclusive.",
+          "type": "integer",
+          "minimum": 1
+        },
+        "startColumn": {
+          "description": "The column on startLine it starts at, starting at 1.",
+          "type": "integer",
+          "minimum": 1
+        },
+        "endColumn": {
+          "description": "The column on endLine it ends at, inclusive.",
+          "type": "integer",
+          "minimum": 1
+        },
+        "resolved": {
+          "description": "Whether the scanner resolved the target. When false, the target is the name as written in the source, e.g. because the library declaring it is not on the classpath.",
+          "type": "boolean",
+          "default": true
+        }
+      },
+      "dependentRequired": {
+        "endLine": ["startLine"],
+        "startColumn": ["startLine"],
+        "endColumn": ["endLine"]
       }
     },
     "Modifier": {
+      "description": "A modifier as declared, or the visibility a language gives through other means. Go reports PUBLIC for exported names. Rust reports PUBLIC for pub and INTERNAL for pub(crate). DEFAULT is a Java default method; EXPORT and EXPORT_DEFAULT are TypeScript and JavaScript export and export default. Python reports STATIC and ABSTRACT for @staticmethod and @abstractmethod, and the decorators as annotations.",
       "type": "string",
       "enum": [
         "PUBLIC",
         "PROTECTED",
         "PRIVATE",
+        "INTERNAL",
         "STATIC",
         "FINAL",
         "ABSTRACT",
@@ -323,7 +716,15 @@
         "TRANSIENT",
         "VOLATILE",
         "NATIVE",
-        "STRICTFP"
+        "STRICTFP",
+        "ASYNC",
+        "EXPORT",
+        "EXPORT_DEFAULT",
+        "READONLY",
+        "OVERRIDE",
+        "CONST",
+        "MUTABLE",
+        "UNSAFE"
       ]
     },
     "Annotation": {
@@ -338,10 +739,36 @@
         "qualifiedName": {
           "type": "string"
         },
+        "startLine": {
+          "description": "The line the annotation, including its arguments, starts on, starting at 1.",
+          "type": "integer",
+          "minimum": 1
+        },
+        "endLine": {
+          "description": "The line the annotation, including its arguments, ends on, inclusive.",
+          "type": "integer",
+          "minimum": 1
+        },
+        "startColumn": {
+          "description": "The column on startLine it starts at, starting at 1.",
+          "type": "integer",
+          "minimum": 1
+        },
+        "endColumn": {
+          "description": "The column on endLine it ends at, inclusive.",
+          "type": "integer",
+          "minimum": 1
+        },
         "arguments": {
           "type": "object",
           "additionalProperties": true
         }
+      },
+      "description": "A Java annotation, a TypeScript or Python decorator, or a Rust attribute such as #[derive(Debug)].",
+      "dependentRequired": {
+        "endLine": ["startLine"],
+        "startColumn": ["startLine"],
+        "endColumn": ["endLine"]
       }
     },
     "Dependency": {
@@ -351,14 +778,163 @@
       "properties": {
         "name": {
           "type": "string",
-          "minLength": 1
+          "minLength": 1,
+          "description": "The name the build system knows it by: \"group:artifact\" for Maven and Gradle, the package name for npm and Python, e.g. \"@scope/package\" or \"requests\", the module path for Go, e.g. \"github.com/google/uuid\", and the crate name for Cargo."
         },
         "version": {
           "type": "string"
         },
         "scope": {
           "type": "string"
+        },
+        "transitive": {
+          "description": "Whether it is pulled in through another dependency rather than declared by the module.",
+          "type": "boolean",
+          "default": false
+        },
+        "module": {
+          "description": "The path of the module in this scan result it refers to, when it is another module of the same target rather than an external library.",
+          "type": "string",
+          "minLength": 1
         }
+      }
+    },
+    "Import": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name"],
+      "properties": {
+        "name": {
+          "description": "The imported name as written, without a trailing wildcard, e.g. \"java.util.List\", \"java.util\" for java.util.*, or \"java.util.Collections.emptyList\" for a static import.",
+          "type": "string",
+          "minLength": 1
+        },
+        "static": {
+          "description": "Whether it is a static import.",
+          "type": "boolean",
+          "default": false
+        },
+        "wildcard": {
+          "description": "Whether it imports every member, as in java.util.*.",
+          "type": "boolean",
+          "default": false
+        },
+        "startLine": {
+          "description": "The line the import statement starts on, starting at 1.",
+          "type": "integer",
+          "minimum": 1
+        },
+        "endLine": {
+          "description": "The line the import statement ends on, inclusive.",
+          "type": "integer",
+          "minimum": 1
+        },
+        "startColumn": {
+          "description": "The column on startLine it starts at, starting at 1.",
+          "type": "integer",
+          "minimum": 1
+        },
+        "endColumn": {
+          "description": "The column on endLine it ends at, inclusive.",
+          "type": "integer",
+          "minimum": 1
+        }
+      },
+      "dependentRequired": {
+        "endLine": ["startLine"],
+        "startColumn": ["startLine"],
+        "endColumn": ["endLine"]
+      }
+    },
+    "EnumConstant": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "qualifiedName": {
+          "description": "The qualified name of the enum followed by the constant, e.g. \"com.example.Status.OPEN\".",
+          "type": "string"
+        },
+        "startLine": {
+          "description": "The line the constant, including its arguments and body, starts on, starting at 1.",
+          "type": "integer",
+          "minimum": 1
+        },
+        "endLine": {
+          "description": "The line the constant, including its arguments and body, ends on, inclusive.",
+          "type": "integer",
+          "minimum": 1
+        },
+        "startColumn": {
+          "description": "The column on startLine it starts at, starting at 1.",
+          "type": "integer",
+          "minimum": 1
+        },
+        "endColumn": {
+          "description": "The column on endLine it ends at, inclusive.",
+          "type": "integer",
+          "minimum": 1
+        },
+        "annotations": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Annotation"
+          }
+        }
+      },
+      "dependentRequired": {
+        "endLine": ["startLine"],
+        "startColumn": ["startLine"],
+        "endColumn": ["endLine"]
+      }
+    },
+    "RecordComponent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "type"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "type": {
+          "$ref": "#/$defs/TypeRef"
+        },
+        "startLine": {
+          "description": "The line the component starts on, starting at 1.",
+          "type": "integer",
+          "minimum": 1
+        },
+        "endLine": {
+          "description": "The line the component ends on, inclusive.",
+          "type": "integer",
+          "minimum": 1
+        },
+        "startColumn": {
+          "description": "The column on startLine it starts at, starting at 1.",
+          "type": "integer",
+          "minimum": 1
+        },
+        "endColumn": {
+          "description": "The column on endLine it ends at, inclusive.",
+          "type": "integer",
+          "minimum": 1
+        },
+        "annotations": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Annotation"
+          }
+        }
+      },
+      "dependentRequired": {
+        "endLine": ["startLine"],
+        "startColumn": ["startLine"],
+        "endColumn": ["endLine"]
       }
     }
   }
