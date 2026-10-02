@@ -1,0 +1,393 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://graphnous.dev/schema/enhancer/enhancer-manifest.schema.json",
+  "title": "Graphnous Enhancer Manifest",
+  "description": "A declarative enhancer: rules that match nodes and add labels, properties and relationships. Target-scoped enhancers run on each ScanResult of a scan; scan-scoped enhancers run once afterwards, over all of them together. Interpreted by the Graphnous enhance engine; enhancers can only add, never remove or overwrite core data.",
+  "type": "object",
+  "required": ["schemaVersion", "id", "name", "version", "namespace", "rules"],
+  "additionalProperties": false,
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "description": "Optional pointer to this schema, for editor support."
+    },
+    "schemaVersion": {
+      "const": "1.0",
+      "description": "Version of the manifest format itself."
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(\\.[a-z0-9-]+)+$",
+      "description": "Globally unique, reverse-DNS-style id, e.g. 'io.acme.spring-endpoints'.",
+      "examples": ["io.acme.spring-endpoints"]
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 100
+    },
+    "version": {
+      "$ref": "#/$defs/semver",
+      "description": "Version of this enhancer."
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 1000
+    },
+    "author": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name"],
+      "properties": {
+        "name": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "url": { "type": "string", "format": "uri" }
+      }
+    },
+    "license": {
+      "type": "string",
+      "description": "SPDX license identifier.",
+      "examples": ["Apache-2.0", "MIT"]
+    },
+    "homepage": {
+      "type": "string",
+      "format": "uri"
+    },
+    "namespace": {
+      "type": "string",
+      "pattern": "^[A-Z][A-Za-z0-9]{1,31}$",
+      "description": "Prefix the engine applies to every label, relationship type and property this enhancer produces (e.g. 'Acme' -> label 'Acme_RestEndpoint'). Prevents collisions with core data and other enhancers. Everything an enhancer adds records the enhancer and rule in '<namespace>_enhancedBy'.",
+      "examples": ["Acme"]
+    },
+    "scope": {
+      "enum": ["target", "scan"],
+      "default": "target",
+      "description": "'target': the rules run on each ScanResult of a scan on its own, and see only that result. 'scan': the rules run once, after every target-scoped enhancer, over all ScanResults of the scan together, so they can connect nodes across targets and languages."
+    },
+    "compatibility": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "scanResult": {
+          "type": "string",
+          "description": "Semver range of ScanResult versions this enhancer supports.",
+          "examples": ["^2.0.0", ">=2.1.0 <3.0.0"]
+        },
+        "languages": {
+          "type": "array",
+          "description": "Languages this enhancer applies to; omit for all. A target-scoped enhancer runs on the ScanResults of these languages. A scan-scoped enhancer runs when the scan has a target in at least one of them.",
+          "items": { "type": "string" },
+          "uniqueItems": true,
+          "examples": [["java", "kotlin"]]
+        }
+      }
+    },
+    "dependsOn": {
+      "type": "array",
+      "description": "Enhancer ids that must run first; their output becomes visible to this enhancer's rules. A scan-scoped enhancer may depend on target- and scan-scoped enhancers; a target-scoped enhancer only on target-scoped ones, as it runs before any scan-scoped enhancer.",
+      "items": { "type": "string", "pattern": "^[a-z0-9]+(\\.[a-z0-9-]+)+$" },
+      "uniqueItems": true
+    },
+    "rules": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/rule" }
+    }
+  },
+
+  "$defs": {
+    "semver": {
+      "type": "string",
+      "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(-[0-9A-Za-z.-]+)?(\\+[0-9A-Za-z.-]+)?$"
+    },
+
+    "identifier": {
+      "type": "string",
+      "pattern": "^[A-Za-z][A-Za-z0-9_]{0,63}$",
+      "description": "Unprefixed name for a label, relationship type or property. The engine adds the enhancer namespace."
+    },
+
+    "nodeKind": {
+      "enum": [
+        "ScanTarget",
+        "Module",
+        "File",
+        "Package",
+        "Class",
+        "Method",
+        "Field",
+        "Annotation"
+      ],
+      "description": "Core node label to match: the nodes of one scan. Interfaces, enums and records are Class nodes with their kind in 'kind'; a method's parameters are its properties 'parameterNames' and 'parameterTypes'. Dependencies are shared between scans, so enhancers cannot match them."
+    },
+
+    "propertyPath": {
+      "type": "string",
+      "pattern": "^[A-Za-z_][A-Za-z0-9_]*(\\.[A-Za-z_][A-Za-z0-9_]*)*$",
+      "description": "Property key on the node being evaluated. Annotation arguments are keys of their own, such as 'arguments.value'. Namespaced output of enhancers is addressed as 'Namespace_prop'.",
+      "examples": [
+        "name",
+        "qualifiedName",
+        "kind",
+        "arguments.value",
+        "Acme_httpMethod"
+      ]
+    },
+
+    "scalar": {
+      "type": ["string", "number", "boolean"]
+    },
+
+    "sourceRef": {
+      "type": "object",
+      "description": "Refers to a property of the rule's matched (source) node. Only valid inside a relationship target selector.",
+      "required": ["source"],
+      "additionalProperties": false,
+      "properties": {
+        "source": { "$ref": "#/$defs/propertyPath" }
+      }
+    },
+
+    "value": {
+      "description": "A literal value, or a reference to the source node's property.",
+      "oneOf": [{ "$ref": "#/$defs/scalar" }, { "$ref": "#/$defs/sourceRef" }]
+    },
+
+    "selector": {
+      "type": "object",
+      "required": ["kind"],
+      "additionalProperties": false,
+      "properties": {
+        "kind": { "$ref": "#/$defs/nodeKind" },
+        "language": {
+          "type": "string",
+          "description": "Only nodes from ScanResults of this language. Mostly for scan-scoped enhancers, whose rules see every target of the scan.",
+          "examples": ["java", "typescript"]
+        },
+        "where": { "$ref": "#/$defs/condition" }
+      }
+    },
+
+    "condition": {
+      "description": "A predicate over a node. Combine with all/any/not.",
+      "oneOf": [
+        { "$ref": "#/$defs/allCondition" },
+        { "$ref": "#/$defs/anyCondition" },
+        { "$ref": "#/$defs/notCondition" },
+        { "$ref": "#/$defs/propertyCondition" },
+        { "$ref": "#/$defs/relatedCondition" },
+        { "$ref": "#/$defs/labelCondition" }
+      ]
+    },
+
+    "allCondition": {
+      "type": "object",
+      "required": ["all"],
+      "additionalProperties": false,
+      "properties": {
+        "all": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/condition" }
+        }
+      }
+    },
+
+    "anyCondition": {
+      "type": "object",
+      "required": ["any"],
+      "additionalProperties": false,
+      "properties": {
+        "any": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/condition" }
+        }
+      }
+    },
+
+    "notCondition": {
+      "type": "object",
+      "required": ["not"],
+      "additionalProperties": false,
+      "properties": {
+        "not": { "$ref": "#/$defs/condition" }
+      }
+    },
+
+    "labelCondition": {
+      "type": "object",
+      "description": "Node has this label (core, or produced by a dependency).",
+      "required": ["hasLabel"],
+      "additionalProperties": false,
+      "properties": {
+        "hasLabel": { "type": "string" }
+      }
+    },
+
+    "propertyCondition": {
+      "type": "object",
+      "description": "Test one property. Exactly one operator must be present.",
+      "required": ["property"],
+      "additionalProperties": false,
+      "properties": {
+        "property": { "$ref": "#/$defs/propertyPath" },
+        "equals": { "$ref": "#/$defs/value" },
+        "in": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/scalar" }
+        },
+        "matches": {
+          "type": "string",
+          "format": "regex",
+          "description": "Java regex, full match."
+        },
+        "startsWith": { "type": "string" },
+        "endsWith": { "type": "string" },
+        "contains": { "type": "string" },
+        "exists": { "type": "boolean" },
+        "caseSensitive": { "type": "boolean", "default": true }
+      },
+      "oneOf": [
+        { "required": ["equals"] },
+        { "required": ["in"] },
+        { "required": ["matches"] },
+        { "required": ["startsWith"] },
+        { "required": ["endsWith"] },
+        { "required": ["contains"] },
+        { "required": ["exists"] }
+      ]
+    },
+
+    "relatedCondition": {
+      "type": "object",
+      "description": "Node has (or lacks, with count max 0) neighbours over a relationship that match a selector.",
+      "required": ["related"],
+      "additionalProperties": false,
+      "properties": {
+        "related": {
+          "type": "object",
+          "required": ["type"],
+          "additionalProperties": false,
+          "properties": {
+            "type": {
+              "type": "string",
+              "description": "Relationship type, core or from a dependency.",
+              "examples": ["ANNOTATED_WITH", "DECLARES", "EXTENDS", "CALLS"]
+            },
+            "direction": { "enum": ["out", "in", "both"], "default": "out" },
+            "to": { "$ref": "#/$defs/selector" },
+            "count": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "min": { "type": "integer", "minimum": 0, "default": 1 },
+                "max": { "type": "integer", "minimum": 0 }
+              }
+            }
+          }
+        }
+      }
+    },
+
+    "propertyValue": {
+      "description": "Value to write. 'template' supports ${node.<prop>} (and ${target.<prop>} on relationships).",
+      "oneOf": [
+        { "$ref": "#/$defs/scalar" },
+        {
+          "type": "object",
+          "required": ["template"],
+          "additionalProperties": false,
+          "properties": {
+            "template": {
+              "type": "string",
+              "examples": ["${node.name}Endpoint"]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": ["fromProperty"],
+          "additionalProperties": false,
+          "properties": {
+            "fromProperty": { "$ref": "#/$defs/propertyPath" }
+          }
+        }
+      ]
+    },
+
+    "propertyMap": {
+      "type": "object",
+      "propertyNames": { "$ref": "#/$defs/identifier" },
+      "additionalProperties": { "$ref": "#/$defs/propertyValue" },
+      "minProperties": 1
+    },
+
+    "relationshipAction": {
+      "type": "object",
+      "required": ["type", "target"],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "type": "string",
+          "pattern": "^[A-Z][A-Z0-9_]{0,63}$",
+          "description": "Unprefixed relationship type; engine adds the namespace.",
+          "examples": ["EXPOSES", "HANDLED_BY"]
+        },
+        "direction": {
+          "enum": ["out", "in"],
+          "default": "out",
+          "description": "'out' = (matched)-[type]->(target)."
+        },
+        "target": {
+          "$ref": "#/$defs/selector",
+          "description": "Which node(s) to connect to. Use {\"source\": \"prop\"} values to correlate with the matched node."
+        },
+        "cardinality": {
+          "enum": ["all", "first", "exactlyOne"],
+          "default": "all",
+          "description": "What to do when several targets match. 'exactlyOne' skips (with a warning) on 0 or >1."
+        },
+        "properties": { "$ref": "#/$defs/propertyMap" }
+      }
+    },
+
+    "actions": {
+      "type": "object",
+      "additionalProperties": false,
+      "minProperties": 1,
+      "properties": {
+        "addLabels": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/identifier" }
+        },
+        "setProperties": { "$ref": "#/$defs/propertyMap" },
+        "addRelationships": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/relationshipAction" }
+        }
+      }
+    },
+
+    "rule": {
+      "type": "object",
+      "required": ["id", "match", "actions"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9-]{0,63}$",
+          "description": "Unique within the manifest; recorded as provenance on everything this rule produces."
+        },
+        "description": { "type": "string" },
+        "enabled": { "type": "boolean", "default": true },
+        "match": { "$ref": "#/$defs/selector" },
+        "actions": { "$ref": "#/$defs/actions" }
+      }
+    }
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "name": "@graphnous/schemas",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Shared JSON Schemas and API contracts for the Graphnous platform",
+  "scripts": {
+    "validate": "npm run validate:json && npm run validate:schemas && npm run validate:openapi",
+    "validate:json": "prettier --check \"**/*.{json,yaml,yml}\"",
+    "validate:schemas": "node scripts/validate-schemas.mjs",
+    "validate:openapi": "redocly lint openapi/v1.yaml",
+    "format": "prettier --write \"**/*.{json,yaml,yml}\""
+  },
+  "devDependencies": {
+    "@redocly/cli": "^2.54.3",
+    "ajv": "^8.20.0",
+    "ajv-cli": "^5.0.0",
+    "ajv-formats": "^3.0.1",
+    "prettier": "^3.9.9"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

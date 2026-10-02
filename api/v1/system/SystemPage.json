@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://graphnous.dev/schema/api/v1/system/SystemPage.json",
+  "title": "SystemPage",
+  "allOf": [
+    {
+      "$ref": "../pagination/Page.json"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "content": {
+          "type": "array",
+          "items": {
+            "$ref": "./System.json"
+          }
+        }
+      }
+    }
+  ]
+}

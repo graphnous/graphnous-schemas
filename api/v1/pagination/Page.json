@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://graphnous.dev/schema/api/v1/pagination/Page.json",
+  "title": "Page",
+  "type": "object",
+  "properties": {
+    "content": {
+      "type": "array"
+    },
+    "page": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "size": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 100
+    },
+    "totalElements": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "totalPages": {
+      "type": "integer",
+      "minimum": 0
+    }
+  },
+  "required": ["content", "page", "size", "totalElements", "totalPages"]
+}

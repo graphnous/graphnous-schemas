@@ -1,0 +1,365 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://graphnous.dev/schema/scan/scan-result.schema.json",
+  "title": "GraphNous Scan Result",
+  "description": "Result produced by a GraphNous scanner for a single scan target.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["format", "version", "target", "modules"],
+  "properties": {
+    "format": {
+      "type": "string",
+      "const": "graphnous-scan-result"
+    },
+    "version": {
+      "type": "string",
+      "const": "2"
+    },
+    "target": {
+      "$ref": "#/$defs/ScanTarget"
+    },
+    "modules": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Module"
+      }
+    }
+  },
+  "$defs": {
+    "ScanTarget": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "language", "languageVersion"],
+      "properties": {
+        "path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "language": {
+          "type": "string",
+          "enum": ["JAVA", "TYPESCRIPT", "JAVASCRIPT", "PYTHON", "GO", "RUST"]
+        },
+        "languageVersion": {
+          "type": "string",
+          "minLength": 1
+        },
+        "buildSystem": {
+          "type": "string",
+          "enum": ["MAVEN", "GRADLE", "NPM", "PNPM", "YARN"]
+        },
+        "buildSystemVersion": {
+          "type": "string"
+        }
+      }
+    },
+    "Module": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "files"],
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "files": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/File"
+          }
+        },
+        "packages": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Package"
+          }
+        },
+        "dependencies": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Dependency"
+          }
+        }
+      }
+    },
+    "File": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path"],
+      "properties": {
+        "path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "language": {
+          "type": "string"
+        },
+        "sourceSet": {
+          "description": "Whether the file is production code or test code, e.g. from src/main/java or src/test/java in Maven. Absent when the scanner cannot tell.",
+          "type": "string",
+          "enum": ["MAIN", "TEST"]
+        },
+        "size": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "checksum": {
+          "type": "string"
+        },
+        "classes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Class"
+          }
+        }
+      }
+    },
+    "Package": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "qualifiedName": {
+          "type": "string"
+        },
+        "classes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Class"
+          }
+        }
+      }
+    },
+    "Class": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "qualifiedName"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "qualifiedName": {
+          "type": "string",
+          "minLength": 1
+        },
+        "kind": {
+          "type": "string",
+          "enum": ["CLASS", "INTERFACE", "ENUM", "RECORD", "ANNOTATION"]
+        },
+        "modifiers": {
+          "description": "The modifiers as declared in the source.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Modifier"
+          }
+        },
+        "typeParameters": {
+          "description": "The declared type parameters with their bounds, e.g. \"T extends java.lang.Comparable<T>\".",
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "superClass": {
+          "description": "The qualified name of the class it extends, with its type arguments, e.g. \"java.util.AbstractList<com.example.Order>\". Only for classes.",
+          "type": "string",
+          "minLength": 1
+        },
+        "interfaces": {
+          "description": "The qualified names of the interfaces it implements, or for an interface those it extends, with their type arguments.",
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "methods": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Method"
+          }
+        },
+        "fields": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Field"
+          }
+        },
+        "annotations": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Annotation"
+          }
+        }
+      }
+    },
+    "Method": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "qualifiedName"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "qualifiedName": {
+          "type": "string",
+          "minLength": 1
+        },
+        "kind": {
+          "description": "Whether this is a method or a constructor. A constructor has no return type.",
+          "type": "string",
+          "enum": ["METHOD", "CONSTRUCTOR"]
+        },
+        "modifiers": {
+          "description": "The modifiers as declared in the source.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Modifier"
+          }
+        },
+        "typeParameters": {
+          "description": "The declared type parameters with their bounds, e.g. \"T extends java.lang.Comparable<T>\".",
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "returnType": {
+          "type": "string"
+        },
+        "parameters": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Parameter"
+          }
+        },
+        "annotations": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Annotation"
+          }
+        }
+      }
+    },
+    "Parameter": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "type"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "type": {
+          "type": "string",
+          "minLength": 1
+        },
+        "qualifiedName": {
+          "description": "The qualified name of the method followed by the name of the parameter, e.g. \"com.example.Orders.find(java.lang.String).id\".",
+          "type": "string"
+        },
+        "annotations": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Annotation"
+          }
+        }
+      }
+    },
+    "Field": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "type"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "type": {
+          "type": "string",
+          "minLength": 1
+        },
+        "qualifiedName": {
+          "type": "string"
+        },
+        "modifiers": {
+          "description": "The modifiers as declared in the source.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Modifier"
+          }
+        },
+        "annotations": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Annotation"
+          }
+        }
+      }
+    },
+    "Modifier": {
+      "type": "string",
+      "enum": [
+        "PUBLIC",
+        "PROTECTED",
+        "PRIVATE",
+        "STATIC",
+        "FINAL",
+        "ABSTRACT",
+        "DEFAULT",
+        "SEALED",
+        "NON_SEALED",
+        "SYNCHRONIZED",
+        "TRANSIENT",
+        "VOLATILE",
+        "NATIVE",
+        "STRICTFP"
+      ]
+    },
+    "Annotation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "qualifiedName": {
+          "type": "string"
+        },
+        "arguments": {
+          "type": "object",
+          "additionalProperties": true
+        }
+      }
+    },
+    "Dependency": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "version": {
+          "type": "string"
+        },
+        "scope": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}
