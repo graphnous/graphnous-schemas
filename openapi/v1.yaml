@@ -637,6 +637,31 @@ paths:
           type: string
           format: uuid
 
+    get:
+      operationId: getScan
+      summary: Get a scan
+      tags:
+        - Scans
+      responses:
+        "200":
+          description: The requested scan.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Scan"
+        "403":
+          description: Not allowed.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "404":
+          description: Scan not found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
     delete:
       operationId: deleteScan
       summary: Delete a scan
