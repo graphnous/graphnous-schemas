@@ -807,16 +807,6 @@ paths:
         organization's entitlements.
       tags:
         - Capabilities
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: X-Organization-Id
-          in: header
-          required: true
-          description: The organization for which capabilities are requested.
-          schema:
-            type: string
-            format: uuid
       responses:
         "200":
           description: Capabilities for the organization.
@@ -830,12 +820,6 @@ paths:
           description: The authenticated user does not have access to the organization.
 
 components:
-  securitySchemes:
-    bearerAuth:
-      type: http
-      scheme: bearer
-      bearerFormat: JWT
-
   schemas:
     ApiError:
       type: object
