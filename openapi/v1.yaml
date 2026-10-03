@@ -800,24 +800,19 @@ paths:
   /api/v1/capabilities:
     get:
       operationId: getCapabilities
-      summary: Get organization capabilities
+      summary: Get capabilities
       description: >
-        Returns the capabilities available to the authenticated organization.
-        Capabilities are derived from the deployment configuration and the
-        organization's entitlements.
+        Returns the capabilities available in this deployment. Capabilities
+        are determined by the deployment type.
       tags:
         - Capabilities
       responses:
         "200":
-          description: Capabilities for the organization.
+          description: Capabilities for the deployment.
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/CapabilitiesResponse"
-        "401":
-          description: Authentication required.
-        "403":
-          description: The authenticated user does not have access to the organization.
 
 components:
   schemas:
@@ -1172,15 +1167,11 @@ components:
     CapabilitiesResponse:
       type: object
       required:
-        - organizationId
         - capabilities
       properties:
-        organizationId:
-          type: string
-          format: uuid
-          description: The organization the capabilities belong to.
         capabilities:
           type: array
+          description: The capabilities available in this deployment.
           uniqueItems: true
           items:
             $ref: "#/components/schemas/Capability"
