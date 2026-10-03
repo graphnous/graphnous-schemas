@@ -797,7 +797,45 @@ paths:
               schema:
                 $ref: "#/components/schemas/ApiError"
 
+  /api/v1/capabilities:
+    get:
+      operationId: getCapabilities
+      summary: Get organization capabilities
+      description: >
+        Returns the capabilities available to the authenticated organization.
+        Capabilities are derived from the deployment configuration and the
+        organization's entitlements.
+      tags:
+        - Capabilities
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: X-Organization-Id
+          in: header
+          required: true
+          description: The organization for which capabilities are requested.
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Capabilities for the organization.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CapabilitiesResponse"
+        "401":
+          description: Authentication required.
+        "403":
+          description: The authenticated user does not have access to the organization.
+
 components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
   schemas:
     ApiError:
       type: object
@@ -1146,3 +1184,34 @@ components:
             - ERROR
         message:
           type: string
+
+    CapabilitiesResponse:
+      type: object
+      required:
+        - organizationId
+        - capabilities
+      properties:
+        organizationId:
+          type: string
+          format: uuid
+          description: The organization the capabilities belong to.
+        capabilities:
+          type: array
+          uniqueItems: true
+          items:
+            $ref: "#/components/schemas/Capability"
+
+    Capability:
+      type: string
+      enum:
+        - SCANNING
+        - PRIVATE_REPOSITORIES
+        - ARCHITECTURE_ANALYSIS
+        - ARCHITECTURE_RULES
+        - ARCHITECTURE_VIOLATIONS
+        - SCAN_COMPARISON
+        - CROSS_PROJECT_ANALYSIS
+        - CUSTOM_ENHANCERS
+        - CUSTOM_RULESETS
+        - AI
+        - BYOK_AI
