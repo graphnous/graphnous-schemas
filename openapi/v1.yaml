@@ -1193,6 +1193,7 @@ components:
       type: object
       required:
         - capabilities
+        - authorization
       properties:
         capabilities:
           type: array
@@ -1200,6 +1201,15 @@ components:
           uniqueItems: true
           items:
             $ref: "#/components/schemas/Capability"
+        authorization:
+          type: object
+          description: The authorization settings of this deployment.
+          required:
+            - enabled
+          properties:
+            enabled:
+              type: boolean
+              description: Whether authorization is enabled in this deployment.
 
     Capability:
       type: string
