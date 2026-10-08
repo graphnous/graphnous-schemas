@@ -144,7 +144,7 @@
           "description": "The top-level classes, interfaces, enums, structs, traits and type aliases declared in the file. Nested ones are listed under the class that encloses them."
         },
         "functions": {
-          "description": "The functions declared at the top level of the file, outside any class, with kind FUNCTION. Go methods with a receiver and Rust methods in impl blocks are listed under the class of their receiver or self type instead.",
+          "description": "The functions declared at the top level of the file, outside any class, with kind FUNCTION. In TypeScript and JavaScript this includes arrow functions and function expressions assigned to a top-level const, let or var, named after the variable, e.g. \"src/orders:find\" for \"export const find = () => ...\"; they are not listed again in variables. Go methods with a receiver and Rust methods in impl blocks are listed under the class of their receiver or self type instead.",
           "type": "array",
           "items": {
             "$ref": "#/$defs/Method"
@@ -155,6 +155,27 @@
           "type": "array",
           "items": {
             "$ref": "#/$defs/Field"
+          }
+        },
+        "calls": {
+          "description": "The methods and constructors called by code at the top level of the file, outside any function or class, one entry per call site: module-level statements such as app.use(...) or router.get(...) in TypeScript and JavaScript, and the initializers of top-level variables. Calls inside functions and classes belong to those.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Call"
+          }
+        },
+        "fieldAccesses": {
+          "description": "The fields and top-level variables read or written by code at the top level of the file, outside any function or class, one entry per access.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/FieldAccess"
+          }
+        },
+        "typeUses": {
+          "description": "The types referred to by code at the top level of the file, outside any function or class, other than through its calls and field accesses, one entry per use. Types of top-level variables are in their type.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/TypeUse"
           }
         }
       }
@@ -602,7 +623,7 @@
       "required": ["target", "access"],
       "properties": {
         "target": {
-          "description": "The qualified name of the field, as in Field.qualifiedName, e.g. \"com.example.Order.id\".",
+          "description": "The qualified name of the field or top-level variable, as in Field.qualifiedName, e.g. \"com.example.Order.id\" or \"src/config:settings\".",
           "type": "string",
           "minLength": 1
         },
