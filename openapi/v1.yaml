@@ -1044,12 +1044,12 @@ components:
       type: object
       required:
         - branch
-        - revision
       properties:
         branch:
           type: string
           minLength: 1
         revision:
+          description: The commit, tag or other git revision to scan; the tip of the branch when missing. The scan keeps it as its requestedRevision, and its revision is the commit it checks out.
           type: string
           minLength: 1
 
@@ -1115,7 +1115,6 @@ components:
         - id
         - projectId
         - branch
-        - revision
         - status
         - createdAt
         - updatedAt
@@ -1130,7 +1129,12 @@ components:
           type: string
           minLength: 1
         revision:
-          type: string
+          description: The commit the scan is of, as its full hash once the scan has checked it out; null until then. For an uploaded scan, the revision it was uploaded with.
+          type: [string, "null"]
+          minLength: 1
+        requestedRevision:
+          description: The revision the scan was asked for, such as a tag or a short commit hash, as it was given; null when it was asked for the tip of its branch.
+          type: [string, "null"]
           minLength: 1
         status:
           type: string
