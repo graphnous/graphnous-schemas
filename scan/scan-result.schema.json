@@ -585,6 +585,13 @@
           "type": "string",
           "enum": ["METHOD", "CONSTRUCTOR", "METHOD_REFERENCE"]
         },
+        "arguments": {
+          "description": "What the call passes, in the order written, one entry per argument: for a component rendered with JSX, its attributes, each under its name, without its children. Empty for a call that passes nothing, such as find(), and for a METHOD_REFERENCE, which passes nothing itself. A scanner that does not record arguments leaves them out of every call.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Argument"
+          }
+        },
         "startLine": {
           "description": "The line the call expression, including its arguments, starts on, starting at 1.",
           "type": "integer",
@@ -615,6 +622,30 @@
         "endLine": ["startLine"],
         "startColumn": ["startLine"],
         "endColumn": ["endLine"]
+      }
+    },
+    "Argument": {
+      "description": "One argument of a call, as written at the call site. It is the source, not a value: what an expression evaluates to is not known to a scanner.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["value"],
+      "properties": {
+        "name": {
+          "description": "The name the argument is passed under, when it is passed by name: the attribute of a JSX element, e.g. \"customerId\" for <OrderList customerId={id} />, or the name of a named argument in a language that has them. Absent for an argument passed by position, as in Java, and in TypeScript and JavaScript outside JSX.",
+          "type": "string",
+          "minLength": 1
+        },
+        "value": {
+          "description": "The expression passed, as written in the source, with each run of whitespace, line breaks included, as one space: e.g. \"id\", \"\\\"/api/orders\\\"\" with its quotes, or \"`/api/orders/${id}`\" with its backticks. At most 200 characters: a longer one, such as a function passed as a callback, is cut off after 199 and ends in \"\u2026\". For a JSX attribute it is the expression between its braces, e.g. \"id\" for customerId={id}, the string with its quotes for title=\"Orders\", and \"true\" for an attribute without a value, as disabled in <Button disabled />. For a spread argument it is the expression spread, without the dots.",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "spread": {
+          "description": "Whether the argument is spread, as ...ids in a call or {...props} in a JSX element. What it passes is then not known from the source: any number of arguments, or attributes of any name.",
+          "type": "boolean",
+          "default": false
+        }
       }
     },
     "FieldAccess": {
