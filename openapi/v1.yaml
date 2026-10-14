@@ -134,6 +134,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/System"
+        "400":
+          $ref: "#/components/responses/BadRequest"
         "403":
           description: Not allowed.
           content:
@@ -192,6 +194,8 @@ paths:
       responses:
         "204":
           description: System deleted.
+        "400":
+          $ref: "#/components/responses/BadRequest"
         "403":
           description: Not allowed.
           content:
@@ -351,6 +355,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Project"
+        "400":
+          $ref: "#/components/responses/BadRequest"
         "403":
           description: Not allowed.
           content:
@@ -409,6 +415,8 @@ paths:
       responses:
         "204":
           description: Project deleted.
+        "400":
+          $ref: "#/components/responses/BadRequest"
         "403":
           description: Not allowed.
           content:
@@ -649,6 +657,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Scan"
+        "400":
+          $ref: "#/components/responses/BadRequest"
         "403":
           description: Not allowed.
           content:
@@ -673,6 +683,8 @@ paths:
       responses:
         "204":
           description: Scan deleted.
+        "400":
+          $ref: "#/components/responses/BadRequest"
         "403":
           description: Not allowed.
           content:
@@ -717,6 +729,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ScanExecution"
+        "400":
+          $ref: "#/components/responses/BadRequest"
         "403":
           description: Not allowed.
           content:
@@ -773,6 +787,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ScanLogPage"
+        "400":
+          $ref: "#/components/responses/BadRequest"
         "403":
           description: Not allowed.
           content:
@@ -809,6 +825,8 @@ paths:
             text/event-stream:
               schema:
                 $ref: "#/components/schemas/ScanLog"
+        "400":
+          $ref: "#/components/responses/BadRequest"
         "403":
           description: Not allowed.
           content:
@@ -861,6 +879,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ScanSettings"
+        "400":
+          $ref: "#/components/responses/BadRequest"
         "403":
           $ref: "#/components/responses/Forbidden"
         "404":
@@ -917,6 +937,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ProjectStats"
+        "400":
+          $ref: "#/components/responses/BadRequest"
         "403":
           $ref: "#/components/responses/Forbidden"
         "404":
@@ -946,6 +968,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/SystemStats"
+        "400":
+          $ref: "#/components/responses/BadRequest"
         "403":
           $ref: "#/components/responses/Forbidden"
         "404":
@@ -1239,6 +1263,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ScanOptions"
+        "400":
+          $ref: "#/components/responses/BadRequest"
         "403":
           $ref: "#/components/responses/Forbidden"
         "404":
@@ -1997,6 +2023,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ChatThread"
+        "400":
+          $ref: "#/components/responses/BadRequest"
         "403":
           $ref: "#/components/responses/Forbidden"
         "404":
@@ -2054,6 +2082,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ChatThread"
+        "400":
+          $ref: "#/components/responses/BadRequest"
         "403":
           $ref: "#/components/responses/Forbidden"
         "404":
@@ -2081,6 +2111,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ChatThread"
+        "400":
+          $ref: "#/components/responses/BadRequest"
         "403":
           $ref: "#/components/responses/Forbidden"
         "404":
@@ -2093,6 +2125,8 @@ paths:
       responses:
         "204":
           description: Deleted.
+        "400":
+          $ref: "#/components/responses/BadRequest"
         "403":
           $ref: "#/components/responses/Forbidden"
         "404":
