@@ -839,7 +839,1304 @@ paths:
               schema:
                 $ref: "#/components/schemas/CapabilitiesResponse"
 
+  /api/v1/projects/{projectId}/scan-settings:
+    parameters:
+      - name: projectId
+        in: path
+        required: true
+        description: The ID of the project.
+        schema:
+          type: string
+          format: uuid
+    get:
+      operationId: getProjectScanSettings
+      summary: Get a project's scan settings
+      description: What the project's scans leave out, and which languages they scan.
+      tags:
+        - Projects
+      responses:
+        "200":
+          description: The project's scan settings.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ScanSettings"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    put:
+      operationId: updateProjectScanSettings
+      summary: Update a project's scan settings
+      description:
+        Sets what the project's scans leave out and which languages they scan from now on; a
+        setting left out stays as it is, and the scans it has stay as they are.
+      tags:
+        - Projects
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ScanSettings"
+      responses:
+        "200":
+          description: The project's scan settings, as kept.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ScanSettings"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/v1/projects/{projectId}/stats:
+    parameters:
+      - name: projectId
+        in: path
+        required: true
+        description: The ID of the project.
+        schema:
+          type: string
+          format: uuid
+    get:
+      operationId: getProjectStats
+      summary: Get a project's stats
+      description:
+        The stats of the project's latest scan that has any, with how many scans the project
+        has; all zero but that when none has, such as before its first scan completed.
+      tags:
+        - Projects
+      responses:
+        "200":
+          description: The project's stats.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProjectStats"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/v1/systems/{systemId}/stats:
+    parameters:
+      - name: systemId
+        in: path
+        required: true
+        description: The ID of the system.
+        schema:
+          type: string
+          format: uuid
+    get:
+      operationId: getSystemStats
+      summary: Get a system's stats
+      description:
+        The stats of the latest scan that has any of each project of the system, added up, with
+        how many projects it has and how many scans they have.
+      tags:
+        - Systems
+      responses:
+        "200":
+          description: The system's stats.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SystemStats"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/v1/systems/{systemId}/scans:
+    parameters:
+      - name: systemId
+        in: path
+        required: true
+        description: The ID of the system.
+        schema:
+          type: string
+          format: uuid
+    get:
+      operationId: listSystemScans
+      summary: List the scans of a system
+      description: The scans of every project of the system.
+      tags:
+        - Systems
+      parameters:
+        - $ref: "#/components/parameters/Page"
+        - name: size
+          in: query
+          required: false
+          description: The number of items per page.
+          schema:
+            type: integer
+            format: int32
+            minimum: 1
+            maximum: 100
+            default: 20
+        - name: sort
+          in: query
+          required: false
+          description: The field to sort by.
+          schema:
+            type: string
+            enum:
+              - createdAt
+              - updatedAt
+            default: createdAt
+        - name: direction
+          in: query
+          required: false
+          description: The sort direction.
+          schema:
+            type: string
+            enum:
+              - asc
+              - desc
+            default: desc
+      responses:
+        "200":
+          description: A page of scans.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ScanPage"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/v1/systems/{systemId}/dependencies:
+    parameters:
+      - name: systemId
+        in: path
+        required: true
+        description: The ID of the system.
+        schema:
+          type: string
+          format: uuid
+    get:
+      operationId: listSystemDependencies
+      summary: List the dependencies of a system
+      description:
+        The libraries the latest completed scan of each project of the system depends on, each
+        with the module and project that depends on it.
+      tags:
+        - Systems
+      parameters:
+        - name: query
+          in: query
+          required: false
+          description: Only those whose name contains this, ignoring case.
+          schema:
+            type: string
+        - name: module
+          in: query
+          required: false
+          description: Only those of the module with this path.
+          schema:
+            type: string
+        - name: scope
+          in: query
+          required: false
+          description: Only those of this scope, such as compile or test.
+          schema:
+            type: string
+        - $ref: "#/components/parameters/Page"
+        - name: size
+          in: query
+          required: false
+          description: The number of items per page.
+          schema:
+            type: integer
+            format: int32
+            minimum: 1
+            maximum: 100
+            default: 50
+        - name: sort
+          in: query
+          required: false
+          description: The field to sort by.
+          schema:
+            type: string
+            enum:
+              - name
+              - module
+              - scope
+            default: name
+        - name: direction
+          in: query
+          required: false
+          description: The sort direction.
+          schema:
+            type: string
+            enum:
+              - asc
+              - desc
+            default: asc
+      responses:
+        "200":
+          description: A page of dependencies.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SystemDependencyPage"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/v1/systems/{systemId}/libraries:
+    parameters:
+      - name: systemId
+        in: path
+        required: true
+        description: The ID of the system.
+        schema:
+          type: string
+          format: uuid
+    get:
+      operationId: listSystemLibraries
+      summary: List the libraries of a system
+      description:
+        Each library the latest completed scans of the system's projects depend on, with the
+        versions they use and the projects that use each.
+      tags:
+        - Systems
+      parameters:
+        - name: query
+          in: query
+          required: false
+          description: Only those whose name contains this, ignoring case.
+          schema:
+            type: string
+        - name: drift
+          in: query
+          required: false
+          description: Only the libraries used in more than one version.
+          schema:
+            type: boolean
+            default: false
+        - $ref: "#/components/parameters/Page"
+        - name: size
+          in: query
+          required: false
+          description: The number of items per page.
+          schema:
+            type: integer
+            format: int32
+            minimum: 1
+            maximum: 100
+            default: 50
+        - name: sort
+          in: query
+          required: false
+          description: The field to sort by.
+          schema:
+            type: string
+            enum:
+              - name
+              - versions
+            default: name
+        - name: direction
+          in: query
+          required: false
+          description: The sort direction.
+          schema:
+            type: string
+            enum:
+              - asc
+              - desc
+            default: asc
+      responses:
+        "200":
+          description: A page of libraries.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SystemLibraryPage"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/v1/systems/{systemId}/links:
+    parameters:
+      - name: systemId
+        in: path
+        required: true
+        description: The ID of the system.
+        schema:
+          type: string
+          format: uuid
+    get:
+      operationId: getSystemLinks
+      summary: Get how the projects of a system are linked over HTTP
+      description:
+        Which HTTP calls request which endpoints, as far as their urls and methods say, from
+        what enhancers added to the scans. The links of the latest completed scans are the ones stored in
+        the graph; those of other scans are found anew each time.
+      tags:
+        - Systems
+      parameters:
+        - name: scans
+          in: query
+          required: false
+          description:
+            The scans to link, such as the ones a graph shows; the latest completed scan of each
+            project when missing. At most 50.
+          schema:
+            type: array
+            items:
+              type: string
+              format: uuid
+            maxItems: 50
+      responses:
+        "200":
+          description: The links.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SystemLinks"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/v1/scans/{scanId}/options:
+    parameters:
+      - name: scanId
+        in: path
+        required: true
+        description: The ID of the scan.
+        schema:
+          type: string
+          format: uuid
+    get:
+      operationId: getScanOptions
+      summary: Get what a scan was created with
+      description:
+        "What the scan was created with besides its source: which enhancers were chosen for it,
+        which files it left out, and which languages it scanned."
+      tags:
+        - Scans
+      responses:
+        "200":
+          description: The scan's options.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ScanOptions"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/v1/scans/{scanId}/enhancements:
+    parameters:
+      - name: scanId
+        in: path
+        required: true
+        description: The ID of the scan.
+        schema:
+          type: string
+          format: uuid
+    post:
+      operationId: enhanceScan
+      summary: Enhance a scan again
+      description:
+        "Enhances a completed scan again, such as with an enhancer installed or updated since:
+        what the enhancers added before is replaced. With restore, the results the scan kept are stored
+        again first. Enhancing continues in the background; the location is where to follow its steps."
+      tags:
+        - Scans
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EnhanceScanRequest"
+      responses:
+        "202":
+          description: The scan, being enhanced again.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Scan"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+  /api/v1/scans/{scanId}/usages:
+    parameters:
+      - name: scanId
+        in: path
+        required: true
+        description: The ID of the scan.
+        schema:
+          type: string
+          format: uuid
+    get:
+      operationId: getScanUsages
+      summary: Get what uses a node of a scan
+      description:
+        "What a change to a class, method or field affects: where a method is called, a class
+        instantiated, named as a type, extended or implemented, a field read or written; following inheritance,
+        and over HTTP what requests an endpoint it serves, from another project of the system too."
+      tags:
+        - Scans
+      parameters:
+        - name: node
+          in: query
+          required: true
+          description: The id of a class, method or field of the scan, or of what an enhancer added to one.
+          schema:
+            type: string
+            minLength: 1
+        - name: depth
+          in: query
+          required: false
+          description: 1 for what uses the node itself; up to 3 to also follow what calls that.
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 3
+            default: 1
+      responses:
+        "200":
+          description: What uses the node.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ScanUsages"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/v1/scans/{scanId}/graph:
+    parameters:
+      - name: scanId
+        in: path
+        required: true
+        description: The ID of the scan.
+        schema:
+          type: string
+          format: uuid
+    get:
+      operationId: getScanGraph
+      summary: Get the graph of a scan
+      description:
+        The nodes and relationships of the scan's graph, around a node or from the scan itself,
+        as far out as the depth.
+      tags:
+        - Scans
+      parameters:
+        - name: focus
+          in: query
+          required: false
+          description: The id of the node to start from; the scan itself when missing.
+          schema:
+            type: string
+        - name: depth
+          in: query
+          required: false
+          description: How many relationships out to follow.
+          schema:
+            type: integer
+            minimum: 1
+        - name: layers
+          in: query
+          required: false
+          description: The ids of the layers to show; every layer when missing.
+          schema:
+            type: array
+            items:
+              type: string
+      responses:
+        "200":
+          description: The graph.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ScanGraph"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/v1/scans/{baseScanId}/compare/{headScanId}:
+    parameters:
+      - name: baseScanId
+        in: path
+        required: true
+        description: The ID of the scan to compare from.
+        schema:
+          type: string
+          format: uuid
+      - name: headScanId
+        in: path
+        required: true
+        description: The ID of the scan to compare to.
+        schema:
+          type: string
+          format: uuid
+    get:
+      operationId: compareScans
+      summary: Compare two scans
+      description: What was added, removed and changed from one scan to another, by type.
+      tags:
+        - Scans
+      responses:
+        "200":
+          description: The comparison.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ScanComparison"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/v1/scans/{scanId}/modules:
+    parameters:
+      - name: scanId
+        in: path
+        required: true
+        description: The ID of the scan.
+        schema:
+          type: string
+          format: uuid
+    get:
+      operationId: listScanModules
+      summary: List modules
+      description: The modules of the scan.
+      tags:
+        - Scan Code
+      parameters:
+        - name: query
+          in: query
+          required: false
+          description: Only those whose name contains this, ignoring case.
+          schema:
+            type: string
+        - name: target
+          in: query
+          required: false
+          description: Only those of the target with this path.
+          schema:
+            type: string
+        - $ref: "#/components/parameters/Page"
+        - name: size
+          in: query
+          required: false
+          description: The number of items per page.
+          schema:
+            type: integer
+            format: int32
+            minimum: 1
+            maximum: 100
+            default: 50
+        - name: sort
+          in: query
+          required: false
+          description: The field to sort by.
+          schema:
+            type: string
+            enum:
+              - path
+              - name
+            default: path
+        - name: direction
+          in: query
+          required: false
+          description: The sort direction.
+          schema:
+            type: string
+            enum:
+              - asc
+              - desc
+            default: asc
+      responses:
+        "200":
+          description: A page of modules.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ScanModulePage"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/v1/scans/{scanId}/packages:
+    parameters:
+      - name: scanId
+        in: path
+        required: true
+        description: The ID of the scan.
+        schema:
+          type: string
+          format: uuid
+    get:
+      operationId: listScanPackages
+      summary: List packages
+      description: The packages of the scan.
+      tags:
+        - Scan Code
+      parameters:
+        - name: query
+          in: query
+          required: false
+          description: Only those whose name contains this, ignoring case.
+          schema:
+            type: string
+        - name: module
+          in: query
+          required: false
+          description: Only those of the module with this path.
+          schema:
+            type: string
+        - $ref: "#/components/parameters/Page"
+        - name: size
+          in: query
+          required: false
+          description: The number of items per page.
+          schema:
+            type: integer
+            format: int32
+            minimum: 1
+            maximum: 100
+            default: 50
+        - name: sort
+          in: query
+          required: false
+          description: The field to sort by.
+          schema:
+            type: string
+            enum:
+              - qualifiedName
+              - name
+            default: qualifiedName
+        - name: direction
+          in: query
+          required: false
+          description: The sort direction.
+          schema:
+            type: string
+            enum:
+              - asc
+              - desc
+            default: asc
+      responses:
+        "200":
+          description: A page of packages.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ScanPackagePage"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/v1/scans/{scanId}/files:
+    parameters:
+      - name: scanId
+        in: path
+        required: true
+        description: The ID of the scan.
+        schema:
+          type: string
+          format: uuid
+    get:
+      operationId: listScanFiles
+      summary: List files
+      description: The files of the scan.
+      tags:
+        - Scan Code
+      parameters:
+        - name: query
+          in: query
+          required: false
+          description: Only those whose name contains this, ignoring case.
+          schema:
+            type: string
+        - name: module
+          in: query
+          required: false
+          description: Only those of the module with this path.
+          schema:
+            type: string
+        - name: language
+          in: query
+          required: false
+          description: Only those of this language.
+          schema:
+            type: string
+        - name: sourceSet
+          in: query
+          required: false
+          description: Only main or only test sources.
+          schema:
+            type: string
+            enum:
+              - main
+              - test
+        - $ref: "#/components/parameters/Page"
+        - name: size
+          in: query
+          required: false
+          description: The number of items per page.
+          schema:
+            type: integer
+            format: int32
+            minimum: 1
+            maximum: 100
+            default: 50
+        - name: sort
+          in: query
+          required: false
+          description: The field to sort by.
+          schema:
+            type: string
+            enum:
+              - path
+              - language
+              - size
+            default: path
+        - name: direction
+          in: query
+          required: false
+          description: The sort direction.
+          schema:
+            type: string
+            enum:
+              - asc
+              - desc
+            default: asc
+      responses:
+        "200":
+          description: A page of files.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ScanFilePage"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/v1/scans/{scanId}/classes:
+    parameters:
+      - name: scanId
+        in: path
+        required: true
+        description: The ID of the scan.
+        schema:
+          type: string
+          format: uuid
+    get:
+      operationId: listScanClasses
+      summary: List classes
+      description: The classes of the scan.
+      tags:
+        - Scan Code
+      parameters:
+        - name: query
+          in: query
+          required: false
+          description: Only those whose name contains this, ignoring case.
+          schema:
+            type: string
+        - name: module
+          in: query
+          required: false
+          description: Only those of the module with this path.
+          schema:
+            type: string
+        - name: kind
+          in: query
+          required: false
+          description: Only those of this kind, such as CLASS or INTERFACE.
+          schema:
+            type: string
+        - $ref: "#/components/parameters/Page"
+        - name: size
+          in: query
+          required: false
+          description: The number of items per page.
+          schema:
+            type: integer
+            format: int32
+            minimum: 1
+            maximum: 100
+            default: 50
+        - name: sort
+          in: query
+          required: false
+          description: The field to sort by.
+          schema:
+            type: string
+            enum:
+              - name
+              - qualifiedName
+              - kind
+            default: qualifiedName
+        - name: direction
+          in: query
+          required: false
+          description: The sort direction.
+          schema:
+            type: string
+            enum:
+              - asc
+              - desc
+            default: asc
+      responses:
+        "200":
+          description: A page of classes.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ScanClassPage"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/v1/scans/{scanId}/methods:
+    parameters:
+      - name: scanId
+        in: path
+        required: true
+        description: The ID of the scan.
+        schema:
+          type: string
+          format: uuid
+    get:
+      operationId: listScanMethods
+      summary: List methods
+      description: The methods and functions of the scan.
+      tags:
+        - Scan Code
+      parameters:
+        - name: query
+          in: query
+          required: false
+          description: Only those whose name contains this, ignoring case.
+          schema:
+            type: string
+        - name: module
+          in: query
+          required: false
+          description: Only those of the module with this path.
+          schema:
+            type: string
+        - name: kind
+          in: query
+          required: false
+          description: Only methods, constructors or functions.
+          schema:
+            type: string
+            enum:
+              - method
+              - constructor
+              - function
+        - name: className
+          in: query
+          required: false
+          description: Only those of the class with this qualified name.
+          schema:
+            type: string
+        - $ref: "#/components/parameters/Page"
+        - name: size
+          in: query
+          required: false
+          description: The number of items per page.
+          schema:
+            type: integer
+            format: int32
+            minimum: 1
+            maximum: 100
+            default: 50
+        - name: sort
+          in: query
+          required: false
+          description: The field to sort by.
+          schema:
+            type: string
+            enum:
+              - name
+              - qualifiedName
+              - kind
+            default: qualifiedName
+        - name: direction
+          in: query
+          required: false
+          description: The sort direction.
+          schema:
+            type: string
+            enum:
+              - asc
+              - desc
+            default: asc
+      responses:
+        "200":
+          description: A page of methods.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ScanMethodPage"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/v1/scans/{scanId}/dependencies:
+    parameters:
+      - name: scanId
+        in: path
+        required: true
+        description: The ID of the scan.
+        schema:
+          type: string
+          format: uuid
+    get:
+      operationId: listScanDependencies
+      summary: List dependencies
+      description: The libraries the scan's modules depend on.
+      tags:
+        - Scan Code
+      parameters:
+        - name: query
+          in: query
+          required: false
+          description: Only those whose name contains this, ignoring case.
+          schema:
+            type: string
+        - name: module
+          in: query
+          required: false
+          description: Only those of the module with this path.
+          schema:
+            type: string
+        - name: scope
+          in: query
+          required: false
+          description: Only those of this scope, such as compile or test.
+          schema:
+            type: string
+        - $ref: "#/components/parameters/Page"
+        - name: size
+          in: query
+          required: false
+          description: The number of items per page.
+          schema:
+            type: integer
+            format: int32
+            minimum: 1
+            maximum: 100
+            default: 50
+        - name: sort
+          in: query
+          required: false
+          description: The field to sort by.
+          schema:
+            type: string
+            enum:
+              - name
+              - module
+              - scope
+            default: name
+        - name: direction
+          in: query
+          required: false
+          description: The sort direction.
+          schema:
+            type: string
+            enum:
+              - asc
+              - desc
+            default: asc
+      responses:
+        "200":
+          description: A page of dependencies.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ScanDependencyPage"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/v1/enhancers:
+    get:
+      operationId: listEnhancers
+      summary: List the installed enhancers
+      description: Every enhancer installed on this server, in the order they run.
+      tags:
+        - Server
+      responses:
+        "200":
+          description: The enhancers.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Enhancer"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /api/v1/scanners:
+    get:
+      operationId: listScanners
+      summary: List the scanners
+      description: Every language this server has a scanner for.
+      tags:
+        - Server
+      responses:
+        "200":
+          description: The scanners.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Scanner"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /api/v1/projects/{projectId}/chat/threads:
+    parameters:
+      - name: projectId
+        in: path
+        required: true
+        description: The ID of the project.
+        schema:
+          type: string
+          format: uuid
+    get:
+      operationId: listProjectChatThreads
+      summary: List the chat threads of a project
+      description: The caller's chat threads about the project, the last one talked in first.
+      tags:
+        - Chat
+      parameters:
+        - $ref: "#/components/parameters/Page"
+        - name: size
+          in: query
+          required: false
+          description: The number of items per page.
+          schema:
+            type: integer
+            format: int32
+            minimum: 1
+            maximum: 100
+            default: 20
+      responses:
+        "200":
+          description: A page of chat threads.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChatThreadPage"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    post:
+      operationId: createProjectChatThread
+      summary: Start a chat thread about a project
+      tags:
+        - Chat
+      responses:
+        "201":
+          description: The new chat thread.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChatThread"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/v1/systems/{systemId}/chat/threads:
+    parameters:
+      - name: systemId
+        in: path
+        required: true
+        description: The ID of the system.
+        schema:
+          type: string
+          format: uuid
+    get:
+      operationId: listSystemChatThreads
+      summary: List the chat threads of a system
+      description: The caller's chat threads about the system, the last one talked in first.
+      tags:
+        - Chat
+      parameters:
+        - $ref: "#/components/parameters/Page"
+        - name: size
+          in: query
+          required: false
+          description: The number of items per page.
+          schema:
+            type: integer
+            format: int32
+            minimum: 1
+            maximum: 100
+            default: 20
+      responses:
+        "200":
+          description: A page of chat threads.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChatThreadPage"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    post:
+      operationId: createSystemChatThread
+      summary: Start a chat thread about a system
+      tags:
+        - Chat
+      responses:
+        "201":
+          description: The new chat thread.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChatThread"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/v1/chat/threads/{threadId}:
+    parameters:
+      - name: threadId
+        in: path
+        required: true
+        description: The ID of the chat thread.
+        schema:
+          type: string
+          format: uuid
+    get:
+      operationId: getChatThread
+      summary: Get a chat thread
+      description: The chat thread with its messages.
+      tags:
+        - Chat
+      responses:
+        "200":
+          description: The chat thread.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChatThread"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      operationId: deleteChatThread
+      summary: Delete a chat thread
+      tags:
+        - Chat
+      responses:
+        "204":
+          description: Deleted.
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
 components:
+  responses:
+    BadRequest:
+      description: Invalid request.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ApiError"
+    Forbidden:
+      description: Not allowed.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ApiError"
+    NotFound:
+      description: Not found.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ApiError"
+    Conflict:
+      description: Conflicts with the current state, such as a scan that is not completed.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ApiError"
+
+  parameters:
+    Page:
+      name: page
+      in: query
+      required: false
+      description: The zero-based page number.
+      schema:
+        type: integer
+        format: int32
+        minimum: 0
+        default: 0
+
   schemas:
     ApiError:
       type: object
@@ -1052,6 +2349,27 @@ components:
           description: The commit, tag or other git revision to scan; the tip of the branch when missing. The scan keeps it as its requestedRevision, and its revision is the commit it checks out.
           type: string
           minLength: 1
+        enhancers:
+          description:
+            The names of the enhancers to run on the scan's results, as GET /enhancers lists them;
+            every installed one when missing, none when empty.
+          type: array
+          items:
+            type: string
+        excludes:
+          description:
+            The patterns of the files to leave out of the scan, such as *.spec.ts, written as in a
+            .gitignore; the project's own when missing, none when empty.
+          type: array
+          items:
+            type: string
+        languages:
+          description:
+            The languages to scan, as GET /scanners lists them, such as JAVA; the project's own when
+            missing, every language the scan finds when empty.
+          type: array
+          items:
+            type: string
 
     System:
       type: object
@@ -1229,3 +2547,1219 @@ components:
         - CUSTOM_RULESETS
         - AI
         - BYOK_AI
+
+    ScanSettings:
+      type: object
+      description:
+        What a project's scans leave out, and which languages they scan; a scan can be created
+        with others.
+      required: []
+      properties:
+        excludes:
+          type: array
+          items:
+            type: string
+          description:
+            The patterns of the files the project leaves out of its scans, such as *.spec.ts, written
+            as in a .gitignore; unchanged when missing.
+        languages:
+          type: array
+          items:
+            type: string
+          description:
+            The languages the project scans, as GET /scanners lists them, such as JAVA; every language
+            its scans find when empty, unchanged when missing.
+
+    ProjectStats:
+      type: object
+      description: How much the latest scan of a project with stats covered, counted from its results.
+      required:
+        - scanId
+        - numberOfModulesScanned
+        - languages
+        - numberOfClassesParsed
+        - numberOfMethodsParsed
+        - numberOfScans
+      properties:
+        scanId:
+          type:
+            - string
+            - "null"
+          format: uuid
+          description: The scan the stats were counted from; null when no scan of the project has stats yet.
+        numberOfModulesScanned:
+          type: integer
+          minimum: 0
+          description: The modules of every target.
+        languages:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              type: string
+          description:
+            The files by the language of their target, such as JAVA; each a path from the root
+            of its project's repository.
+        numberOfClassesParsed:
+          type: integer
+          minimum: 0
+          description: The classes, each counted once per module.
+        numberOfMethodsParsed:
+          type: integer
+          minimum: 0
+          description: The methods of those classes, and the functions outside any class.
+        numberOfScans:
+          type: integer
+          minimum: 0
+          description: The project's scans, whatever their status.
+
+    SystemStats:
+      type: object
+      description: How much the latest scans of a system's projects covered together.
+      required:
+        - systemId
+        - numberOfProjectsScanned
+        - numberOfModulesScanned
+        - languages
+        - numberOfClassesParsed
+        - numberOfMethodsParsed
+        - numberOfProjects
+        - numberOfScans
+      properties:
+        systemId:
+          type: string
+          format: uuid
+        numberOfProjectsScanned:
+          type: integer
+          minimum: 0
+          description: The projects with a scan that has stats.
+        numberOfModulesScanned:
+          type: integer
+          minimum: 0
+          description: The modules of those projects.
+        languages:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              type: string
+          description:
+            The files by the language of their target, such as JAVA; each a path from the root
+            of its project's repository.
+        numberOfClassesParsed:
+          type: integer
+          minimum: 0
+          description: The classes of those projects.
+        numberOfMethodsParsed:
+          type: integer
+          minimum: 0
+          description: The methods of those projects.
+        numberOfProjects:
+          type: integer
+          minimum: 0
+          description: The projects of the system, scanned or not.
+        numberOfScans:
+          type: integer
+          minimum: 0
+          description: The scans of those projects, whatever their status.
+
+    ScanOptions:
+      type: object
+      description: What a scan was created with besides its source.
+      required:
+        - enhancers
+        - excludes
+        - languages
+      properties:
+        enhancers:
+          type:
+            - array
+            - "null"
+          items:
+            type: string
+          description:
+            The enhancers chosen for the scan; null when none were chosen, which ran every installed
+            enhancer.
+        excludes:
+          type: array
+          items:
+            type: string
+          description: The patterns of the files the scan left out; empty when it kept every file.
+        languages:
+          type: array
+          items:
+            type: string
+          description: The languages the scan scanned; empty when it scanned every language found.
+
+    EnhanceScanRequest:
+      type: object
+      required: []
+      properties:
+        enhancers:
+          type:
+            - array
+            - "null"
+          items:
+            type: string
+          description:
+            The names of the enhancers to run, as GET /enhancers lists them; every installed one
+            when missing, none when empty.
+        restore:
+          type:
+            - boolean
+            - "null"
+          description: Whether to store the results the scan kept again first.
+
+    Enhancer:
+      type: object
+      description: An enhancer installed on the server.
+      required:
+        - name
+        - version
+      properties:
+        name:
+          type: string
+          description: Such as spring; unique among the installed enhancers.
+        version:
+          type: string
+          description: Such as 1.0.0.
+
+    Scanner:
+      type: object
+      description: A scanner the server runs, one per language.
+      required:
+        - language
+      properties:
+        language:
+          type: string
+          description: Such as JAVA.
+
+    ScanModule:
+      type: object
+      description: A module of a scan.
+      required:
+        - id
+        - target
+        - name
+        - path
+        - files
+        - packages
+        - classes
+        - methods
+        - dependencies
+      properties:
+        id:
+          type: string
+        target:
+          type:
+            - string
+            - "null"
+        name:
+          type:
+            - string
+            - "null"
+        path:
+          type:
+            - string
+            - "null"
+        files:
+          type: integer
+          minimum: 0
+        packages:
+          type: integer
+          minimum: 0
+        classes:
+          type: integer
+          minimum: 0
+        methods:
+          type: integer
+          minimum: 0
+        dependencies:
+          type: integer
+          minimum: 0
+
+    ScanPackage:
+      type: object
+      description: A package of a scan.
+      required:
+        - id
+        - module
+        - name
+        - qualifiedName
+        - classes
+        - functions
+        - variables
+      properties:
+        id:
+          type: string
+        module:
+          type:
+            - string
+            - "null"
+        name:
+          type:
+            - string
+            - "null"
+        qualifiedName:
+          type:
+            - string
+            - "null"
+        classes:
+          type: integer
+          minimum: 0
+        functions:
+          type: integer
+          minimum: 0
+        variables:
+          type: integer
+          minimum: 0
+
+    ScanFile:
+      type: object
+      description: A file of a scan.
+      required:
+        - id
+        - target
+        - module
+        - path
+        - language
+        - sourceSet
+        - size
+        - checksum
+        - classes
+        - functions
+      properties:
+        id:
+          type: string
+        target:
+          type:
+            - string
+            - "null"
+        module:
+          type:
+            - string
+            - "null"
+        path:
+          type:
+            - string
+            - "null"
+        language:
+          type:
+            - string
+            - "null"
+        sourceSet:
+          type:
+            - string
+            - "null"
+        size:
+          type:
+            - integer
+            - "null"
+          minimum: 0
+        checksum:
+          type:
+            - string
+            - "null"
+        classes:
+          type: integer
+          minimum: 0
+        functions:
+          type: integer
+          minimum: 0
+
+    ScanClass:
+      type: object
+      description: A class of a scan.
+      required:
+        - id
+        - name
+        - qualifiedName
+        - kind
+        - modifiers
+        - module
+        - file
+        - packageName
+        - superClass
+        - interfaces
+        - annotations
+        - methods
+        - fields
+      properties:
+        id:
+          type: string
+        name:
+          type:
+            - string
+            - "null"
+        qualifiedName:
+          type:
+            - string
+            - "null"
+        kind:
+          type:
+            - string
+            - "null"
+        modifiers:
+          type:
+            - array
+            - "null"
+          items:
+            type: string
+        module:
+          type:
+            - string
+            - "null"
+        file:
+          type:
+            - string
+            - "null"
+        packageName:
+          type:
+            - string
+            - "null"
+        superClass:
+          type:
+            - string
+            - "null"
+        interfaces:
+          type:
+            - array
+            - "null"
+          items:
+            type: string
+        annotations:
+          type:
+            - array
+            - "null"
+          items:
+            type: string
+        methods:
+          type: integer
+          minimum: 0
+        fields:
+          type: integer
+          minimum: 0
+
+    ScanMethod:
+      type: object
+      description: A method or function of a scan.
+      required:
+        - id
+        - name
+        - qualifiedName
+        - kind
+        - modifiers
+        - returnType
+        - parameterNames
+        - parameterTypes
+        - annotations
+        - className
+        - module
+        - file
+      properties:
+        id:
+          type: string
+        name:
+          type:
+            - string
+            - "null"
+        qualifiedName:
+          type:
+            - string
+            - "null"
+        kind:
+          type:
+            - string
+            - "null"
+        modifiers:
+          type:
+            - array
+            - "null"
+          items:
+            type: string
+        returnType:
+          type:
+            - string
+            - "null"
+        parameterNames:
+          type:
+            - array
+            - "null"
+          items:
+            type: string
+        parameterTypes:
+          type:
+            - array
+            - "null"
+          items:
+            type: string
+        annotations:
+          type:
+            - array
+            - "null"
+          items:
+            type: string
+        className:
+          type:
+            - string
+            - "null"
+        module:
+          type:
+            - string
+            - "null"
+        file:
+          type:
+            - string
+            - "null"
+
+    ScanDependency:
+      type: object
+      description: A library a module of a scan depends on.
+      required:
+        - id
+        - module
+        - name
+        - version
+        - scope
+      properties:
+        id:
+          type: string
+        module:
+          type:
+            - string
+            - "null"
+        name:
+          type: string
+          description: Such as org.slf4j:slf4j-api.
+        version:
+          type:
+            - string
+            - "null"
+        scope:
+          type:
+            - string
+            - "null"
+
+    ScanGraph:
+      type: object
+      description: Nodes and relationships of a scan's graph.
+      required:
+        - scanId
+        - focus
+        - depth
+        - nodes
+        - edges
+        - truncated
+        - layers
+      properties:
+        scanId:
+          type: string
+          format: uuid
+        focus:
+          type:
+            - string
+            - "null"
+          description: The node it starts from; null for the scan itself.
+        depth:
+          type: integer
+          minimum: 0
+        nodes:
+          type: array
+          items:
+            $ref: "#/components/schemas/ScanGraphNode"
+        edges:
+          type: array
+          items:
+            $ref: "#/components/schemas/ScanGraphEdge"
+        truncated:
+          type: boolean
+          description: Whether there are more nodes within reach than it holds.
+        layers:
+          type: array
+          items:
+            $ref: "#/components/schemas/ScanGraphLayer"
+          description: The layers of the scan, to show or leave out.
+
+    ScanGraphNode:
+      type: object
+      required:
+        - id
+        - type
+        - name
+        - depth
+        - properties
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+          description: Such as Class, Method or a label an enhancer added.
+        name:
+          type:
+            - string
+            - "null"
+        depth:
+          type: integer
+          minimum: 0
+          description: How many relationships away from where the graph starts.
+        properties:
+          type: object
+          additionalProperties: true
+
+    ScanGraphEdge:
+      type: object
+      required:
+        - source
+        - target
+        - type
+        - properties
+      properties:
+        source:
+          type: string
+        target:
+          type: string
+        type:
+          type: string
+        properties:
+          type: object
+          additionalProperties: true
+
+    ScanGraphLayer:
+      type: object
+      required:
+        - id
+        - name
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+
+    ScanComparison:
+      type: object
+      description: What was added, removed and changed from one scan to another.
+      required:
+        - base
+        - head
+        - summary
+        - added
+        - removed
+        - changed
+        - truncated
+      properties:
+        base:
+          type: string
+          format: uuid
+        head:
+          type: string
+          format: uuid
+        summary:
+          type: array
+          items:
+            $ref: "#/components/schemas/ScanComparisonSummary"
+        added:
+          type: array
+          items:
+            $ref: "#/components/schemas/ComparedNode"
+        removed:
+          type: array
+          items:
+            $ref: "#/components/schemas/ComparedNode"
+        changed:
+          type: array
+          items:
+            $ref: "#/components/schemas/ChangedNode"
+        truncated:
+          type: boolean
+
+    ScanComparisonSummary:
+      type: object
+      required:
+        - type
+        - added
+        - removed
+        - changed
+      properties:
+        type:
+          type: string
+        added:
+          type: integer
+          minimum: 0
+        removed:
+          type: integer
+          minimum: 0
+        changed:
+          type: integer
+          minimum: 0
+
+    ComparedNode:
+      type: object
+      required:
+        - key
+        - type
+        - name
+        - properties
+      properties:
+        key:
+          type: string
+        type:
+          type: string
+        name:
+          type:
+            - string
+            - "null"
+        properties:
+          type: object
+          additionalProperties: true
+
+    ChangedNode:
+      type: object
+      required:
+        - key
+        - type
+        - name
+        - properties
+      properties:
+        key:
+          type: string
+        type:
+          type: string
+        name:
+          type:
+            - string
+            - "null"
+        properties:
+          type: array
+          items:
+            $ref: "#/components/schemas/ChangedProperty"
+
+    ChangedProperty:
+      type: object
+      required:
+        - name
+        - before
+        - after
+      properties:
+        name:
+          type: string
+        before:
+          description: Any value, or null.
+        after:
+          description: Any value, or null.
+
+    ScanUsages:
+      type: object
+      description: "What uses a node of a scan: what a change to it affects."
+      required:
+        - scanId
+        - subject
+        - usages
+        - truncated
+      properties:
+        scanId:
+          type: string
+          format: uuid
+        subject:
+          $ref: "#/components/schemas/ScanUsageNode"
+        usages:
+          type: array
+          items:
+            $ref: "#/components/schemas/ScanUsage"
+          description: By file and line.
+        truncated:
+          type: boolean
+          description: Whether there are more usages than it holds.
+
+    ScanUsageNode:
+      type: object
+      required:
+        - id
+        - type
+        - name
+        - qualifiedName
+      properties:
+        id:
+          type: string
+          description: Its id in the scan's graph, the focus of GET /scans/{scanId}/graph.
+        type:
+          type: string
+          description: Class, Method or Field.
+        name:
+          type:
+            - string
+            - "null"
+        qualifiedName:
+          type:
+            - string
+            - "null"
+
+    ScanUsage:
+      type: object
+      description: One place that uses what was asked about, or one of its members.
+      required:
+        - relationship
+        - user
+        - owner
+        - file
+        - line
+        - target
+        - targetOwner
+        - depth
+        - arguments
+        - scanId
+        - projectId
+        - request
+      properties:
+        relationship:
+          type: string
+          enum:
+            - CALLS
+            - INSTANTIATES
+            - READS
+            - WRITES
+            - USES
+            - EXTENDS
+            - IMPLEMENTS
+            - OVERRIDES
+            - REQUESTS
+          description: How it uses it.
+        user:
+          $ref: "#/components/schemas/ScanUsageNode"
+        owner:
+          type:
+            - string
+            - "null"
+          description: The name of the class the user is a method of.
+        file:
+          type:
+            - string
+            - "null"
+          description: The path of the file the user is in.
+        line:
+          type:
+            - integer
+            - "null"
+          minimum: 0
+          description: The line it uses it on, when the scan says.
+        target:
+          $ref: "#/components/schemas/ScanUsageNode"
+        targetOwner:
+          type:
+            - string
+            - "null"
+          description: The name of the class the target is a method or field of.
+        depth:
+          type: integer
+          minimum: 1
+          description: 1 for what uses it itself, 2 for what calls that, and so on.
+        arguments:
+          type:
+            - array
+            - "null"
+          items:
+            $ref: "#/components/schemas/ScanUsageArgument"
+          description:
+            What a call or an instantiation passes, in the order written; null for another relationship,
+            and when the scan did not record them.
+        scanId:
+          type: string
+          format: uuid
+          description: "The scan the user is in: the one asked about, or over HTTP that of another project."
+        projectId:
+          type:
+            - string
+            - "null"
+          format: uuid
+          description: The project of that scan.
+        request:
+          oneOf:
+            - $ref: "#/components/schemas/ScanUsageRequest"
+            - type: "null"
+          description: For REQUESTS, the call and the endpoint it requests.
+
+    ScanUsageArgument:
+      type: object
+      required:
+        - name
+        - value
+        - spread
+      properties:
+        name:
+          type:
+            - string
+            - "null"
+          description: The name it is passed under; null when passed by position.
+        value:
+          type: string
+          description: The expression passed, as written.
+        spread:
+          type: boolean
+          description: Whether it is spread, so what it passes is not known.
+
+    ScanUsageRequest:
+      type: object
+      description: An HTTP call of an endpoint the target serves.
+      required:
+        - callMethod
+        - callUrl
+        - endpointMethod
+        - endpointUrl
+      properties:
+        callMethod:
+          type:
+            - string
+            - "null"
+          description: What the call requests with, such as GET; null when the scan does not say.
+        callUrl:
+          type:
+            - string
+            - "null"
+          description: The url the call requests, as written.
+        endpointMethod:
+          type:
+            - string
+            - "null"
+          description: The endpoint's method, or ANY.
+        endpointUrl:
+          type:
+            - string
+            - "null"
+          description: The endpoint's path.
+
+    SystemDependency:
+      type: object
+      description: A library a module of a project of the system depends on.
+      required:
+        - id
+        - projectId
+        - scanId
+        - module
+        - name
+        - version
+        - scope
+      properties:
+        id:
+          type: string
+          description: Its id in its scan's graph.
+        projectId:
+          type: string
+          format: uuid
+        scanId:
+          type: string
+          format: uuid
+        module:
+          type:
+            - string
+            - "null"
+        name:
+          type: string
+        version:
+          type:
+            - string
+            - "null"
+        scope:
+          type:
+            - string
+            - "null"
+
+    SystemLibrary:
+      type: object
+      description: A library the system's projects depend on, with the versions they use.
+      required:
+        - name
+        - versions
+      properties:
+        name:
+          type: string
+        versions:
+          type: array
+          items:
+            $ref: "#/components/schemas/SystemLibraryVersion"
+
+    SystemLibraryVersion:
+      type: object
+      required:
+        - version
+        - projects
+      properties:
+        version:
+          type:
+            - string
+            - "null"
+        projects:
+          type: array
+          items:
+            type: string
+            format: uuid
+
+    SystemLinks:
+      type: object
+      description: How the projects of a system are linked over HTTP.
+      required:
+        - links
+        - calls
+        - endpoints
+      properties:
+        links:
+          type: array
+          items:
+            $ref: "#/components/schemas/SystemLink"
+        calls:
+          type: integer
+          minimum: 0
+          description: How many HTTP calls the scans have.
+        endpoints:
+          type: integer
+          minimum: 0
+          description: How many endpoints the scans have.
+
+    SystemLink:
+      type: object
+      required:
+        - call
+        - endpoint
+        - match
+        - crossesProjects
+      properties:
+        call:
+          $ref: "#/components/schemas/SystemLinkCall"
+        endpoint:
+          $ref: "#/components/schemas/SystemLinkEndpoint"
+        match:
+          type: string
+          enum:
+            - PATH
+            - SUFFIX
+          description:
+            PATH when the call's whole path is the endpoint's; SUFFIX when it is its end, after
+            a base only known when it runs.
+        crossesProjects:
+          type: boolean
+
+    SystemLinkCall:
+      type: object
+      required:
+        - id
+        - scanId
+        - projectId
+        - httpMethod
+        - url
+        - client
+      properties:
+        id:
+          type: string
+        scanId:
+          type: string
+          format: uuid
+        projectId:
+          type: string
+          format: uuid
+        httpMethod:
+          type:
+            - string
+            - "null"
+        url:
+          type:
+            - string
+            - "null"
+        client:
+          type:
+            - string
+            - "null"
+          description: What makes the call, such as fetch.
+
+    SystemLinkEndpoint:
+      type: object
+      required:
+        - id
+        - scanId
+        - projectId
+        - httpMethod
+        - url
+      properties:
+        id:
+          type: string
+        scanId:
+          type: string
+          format: uuid
+        projectId:
+          type: string
+          format: uuid
+        httpMethod:
+          type:
+            - string
+            - "null"
+        url:
+          type:
+            - string
+            - "null"
+
+    ChatThreadSummary:
+      type: object
+      description: A chat thread, without its messages.
+      required:
+        - id
+        - systemId
+        - projectId
+        - title
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        systemId:
+          type: string
+          format: uuid
+        projectId:
+          type:
+            - string
+            - "null"
+          format: uuid
+          description: The project it is about; null for the system.
+        title:
+          type:
+            - string
+            - "null"
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    ChatThread:
+      type: object
+      description: A chat thread with its messages.
+      required:
+        - id
+        - systemId
+        - projectId
+        - title
+        - messages
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        systemId:
+          type: string
+          format: uuid
+        projectId:
+          type:
+            - string
+            - "null"
+          format: uuid
+          description: The project it is about; null for the system.
+        title:
+          type:
+            - string
+            - "null"
+        messages:
+          description: The thread's messages, as the assistant keeps them.
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    ScanModulePage:
+      allOf:
+        - $ref: "#/components/schemas/Page"
+        - type: object
+          additionalProperties: true
+          properties:
+            content:
+              type: array
+              items:
+                $ref: "#/components/schemas/ScanModule"
+
+    ScanPackagePage:
+      allOf:
+        - $ref: "#/components/schemas/Page"
+        - type: object
+          additionalProperties: true
+          properties:
+            content:
+              type: array
+              items:
+                $ref: "#/components/schemas/ScanPackage"
+
+    ScanFilePage:
+      allOf:
+        - $ref: "#/components/schemas/Page"
+        - type: object
+          additionalProperties: true
+          properties:
+            content:
+              type: array
+              items:
+                $ref: "#/components/schemas/ScanFile"
+
+    ScanClassPage:
+      allOf:
+        - $ref: "#/components/schemas/Page"
+        - type: object
+          additionalProperties: true
+          properties:
+            content:
+              type: array
+              items:
+                $ref: "#/components/schemas/ScanClass"
+
+    ScanMethodPage:
+      allOf:
+        - $ref: "#/components/schemas/Page"
+        - type: object
+          additionalProperties: true
+          properties:
+            content:
+              type: array
+              items:
+                $ref: "#/components/schemas/ScanMethod"
+
+    ScanDependencyPage:
+      allOf:
+        - $ref: "#/components/schemas/Page"
+        - type: object
+          additionalProperties: true
+          properties:
+            content:
+              type: array
+              items:
+                $ref: "#/components/schemas/ScanDependency"
+
+    SystemDependencyPage:
+      allOf:
+        - $ref: "#/components/schemas/Page"
+        - type: object
+          additionalProperties: true
+          properties:
+            content:
+              type: array
+              items:
+                $ref: "#/components/schemas/SystemDependency"
+
+    SystemLibraryPage:
+      allOf:
+        - $ref: "#/components/schemas/Page"
+        - type: object
+          additionalProperties: true
+          properties:
+            content:
+              type: array
+              items:
+                $ref: "#/components/schemas/SystemLibrary"
+
+    ChatThreadPage:
+      allOf:
+        - $ref: "#/components/schemas/Page"
+        - type: object
+          additionalProperties: true
+          properties:
+            content:
+              type: array
+              items:
+                $ref: "#/components/schemas/ChatThreadSummary"
