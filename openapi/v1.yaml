@@ -840,6 +840,227 @@ paths:
               schema:
                 $ref: "#/components/schemas/ApiError"
 
+  /api/v1/systems/{systemId}/notifications:
+    parameters:
+      - $ref: "#/components/parameters/SystemId"
+    get:
+      operationId: listSystemNotifications
+      summary: List a system's notifications
+      description: The notifications of the system, its projects and their scans, newest first.
+      tags:
+        - Notifications
+      parameters:
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/NotificationPageSize"
+        - $ref: "#/components/parameters/Unread"
+      responses:
+        "200":
+          description: A page of notifications.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NotificationPage"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/v1/systems/{systemId}/notifications/unread:
+    parameters:
+      - $ref: "#/components/parameters/SystemId"
+    get:
+      operationId: countUnreadNotifications
+      summary: Count a system's unread notifications
+      tags:
+        - Notifications
+      responses:
+        "200":
+          description: How many of the system's notifications are unread.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NotificationCount"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/v1/systems/{systemId}/notifications/read:
+    parameters:
+      - $ref: "#/components/parameters/SystemId"
+    post:
+      operationId: markAllNotificationsRead
+      summary: Mark a system's notifications read
+      description: Marks every unread notification of the system, its projects and their scans read, for the caller.
+      tags:
+        - Notifications
+      responses:
+        "200":
+          description: How many notifications were marked read.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NotificationCount"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/v1/systems/{systemId}/notifications/stream:
+    parameters:
+      - $ref: "#/components/parameters/SystemId"
+    get:
+      operationId: streamNotifications
+      summary: Stream a system's notifications
+      description:
+        Streams what happens to the notifications of the system, its projects and their scans,
+        using Server-Sent Events, from when the stream opens. Each event is named after its type,
+        in lower case, such as created.
+      tags:
+        - Notifications
+      responses:
+        "200":
+          description: A stream of notification events.
+          content:
+            text/event-stream:
+              schema:
+                $ref: "#/components/schemas/NotificationEvent"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/v1/projects/{projectId}/notifications:
+    parameters:
+      - name: projectId
+        in: path
+        required: true
+        description: The ID of the project.
+        schema:
+          type: string
+          format: uuid
+    get:
+      operationId: listProjectNotifications
+      summary: List a project's notifications
+      description: The notifications of the project and its scans, newest first.
+      tags:
+        - Notifications
+      parameters:
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/NotificationPageSize"
+        - $ref: "#/components/parameters/Unread"
+      responses:
+        "200":
+          description: A page of notifications.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NotificationPage"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/v1/scans/{scanId}/notifications:
+    parameters:
+      - name: scanId
+        in: path
+        required: true
+        description: The ID of the scan.
+        schema:
+          type: string
+          format: uuid
+    get:
+      operationId: listScanNotifications
+      summary: List a scan's notifications
+      description: The notifications of the scan, newest first.
+      tags:
+        - Notifications
+      parameters:
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/NotificationPageSize"
+        - $ref: "#/components/parameters/Unread"
+      responses:
+        "200":
+          description: A page of notifications.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NotificationPage"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/v1/notifications/{notificationId}:
+    parameters:
+      - name: notificationId
+        in: path
+        required: true
+        description: The ID of the notification.
+        schema:
+          type: string
+          format: uuid
+    get:
+      operationId: getNotification
+      summary: Get a notification
+      tags:
+        - Notifications
+      responses:
+        "200":
+          description: The notification.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Notification"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    patch:
+      operationId: updateNotification
+      summary: Mark a notification read or unread
+      description: For the caller; others read it for themselves.
+      tags:
+        - Notifications
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateNotificationRequest"
+      responses:
+        "200":
+          description: The notification, as marked.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Notification"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      operationId: deleteNotification
+      summary: Delete a notification
+      tags:
+        - Notifications
+      responses:
+        "204":
+          description: The notification is gone.
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
   /api/v1/capabilities:
     get:
       operationId: getCapabilities
@@ -2237,6 +2458,33 @@ components:
             $ref: "#/components/schemas/ApiError"
 
   parameters:
+    SystemId:
+      name: systemId
+      in: path
+      required: true
+      description: The ID of the system.
+      schema:
+        type: string
+        format: uuid
+    NotificationPageSize:
+      name: size
+      in: query
+      required: false
+      description: The number of notifications per page.
+      schema:
+        type: integer
+        format: int32
+        minimum: 1
+        maximum: 100
+        default: 20
+    Unread:
+      name: unread
+      in: query
+      required: false
+      description: Only the unread notifications, when true.
+      schema:
+        type: boolean
+        default: false
     Page:
       name: page
       in: query
@@ -2391,6 +2639,101 @@ components:
               type: array
               items:
                 $ref: "#/components/schemas/ScanLog"
+
+    Notification:
+      type: object
+      required:
+        - id
+        - systemId
+        - content
+        - read
+        - createdAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        systemId:
+          type: string
+          format: uuid
+        projectId:
+          description: The project it is about; null when it is about the system as a whole.
+          type: [string, "null"]
+          format: uuid
+        scanId:
+          description: The scan it is about; null when it is about none.
+          type: [string, "null"]
+          format: uuid
+        title:
+          description: A short summary, such as Scan failed; null when it has none.
+          type: [string, "null"]
+        content:
+          type: string
+          minLength: 1
+        read:
+          description:
+            Whether the caller read it. Each user reads for themselves; without a user, as without
+            security or for an API key, it is read for no user.
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+
+    NotificationPage:
+      allOf:
+        - $ref: "#/components/schemas/Page"
+        - type: object
+          additionalProperties: true
+          properties:
+            content:
+              type: array
+              items:
+                $ref: "#/components/schemas/Notification"
+
+    NotificationCount:
+      type: object
+      required:
+        - count
+      properties:
+        count:
+          type: integer
+          format: int64
+          minimum: 0
+
+    UpdateNotificationRequest:
+      type: object
+      required:
+        - read
+      properties:
+        read:
+          type: boolean
+
+    NotificationEvent:
+      description:
+        What happened to a notification of the system. CREATED, UPDATED (marked read or unread) and
+        DELETED are of one notification; ALL_READ, of every notification of the system, marked read.
+        A stream sends UPDATED and ALL_READ only of the caller's own reading.
+      type: object
+      required:
+        - type
+        - systemId
+      properties:
+        type:
+          type: string
+          enum:
+            - CREATED
+            - UPDATED
+            - DELETED
+            - ALL_READ
+        systemId:
+          type: string
+          format: uuid
+        notificationId:
+          description: The notification's ID; left out for ALL_READ.
+          type: string
+          format: uuid
+        notification:
+          $ref: "#/components/schemas/Notification"
+          description: The notification as it is now, for CREATED and UPDATED; left out otherwise.
 
     CreateSystemRequest:
       type: object
