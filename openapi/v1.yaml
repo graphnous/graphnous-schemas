@@ -2481,6 +2481,14 @@ components:
           type: array
           items:
             type: string
+        trigger:
+          description:
+            Why the scan starts, as the scan records it; MANUAL when missing. CHAT for one the user
+            approved in the assistant's chat. The server sets the others itself.
+          type: string
+          enum:
+            - MANUAL
+            - CHAT
 
     System:
       type: object
@@ -2587,6 +2595,19 @@ components:
           description: When the scan completed or failed; null while it is active.
           type: [string, "null"]
           format: date-time
+        trigger:
+          description:
+            Why the scan started. MANUAL, started in the app; CHAT, started from the assistant's chat
+            on the user's approval; GITHUB_APP, started by the GitHub App, for a push or a pull
+            request; UPLOAD, of results scanned elsewhere, such as by a CI job. Null for scans from
+            before triggers were recorded.
+          type: [string, "null"]
+          enum:
+            - MANUAL
+            - CHAT
+            - GITHUB_APP
+            - UPLOAD
+            - null
 
     ScanLog:
       type: object
