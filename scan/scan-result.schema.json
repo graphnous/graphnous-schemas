@@ -592,6 +592,11 @@
           "type": "string",
           "minLength": 1
         },
+        "module": {
+          "description": "For a call of what a package exports, the module it is imported from as written, such as \"@acme/theme\" or \"@acme/theme/format\"; the target is then that module and the export, e.g. \"@acme/theme:Button\", and the call is not resolved, as the package is not scanned. Absent for a call of the scan's own code, and of anything not imported from a package.",
+          "type": "string",
+          "minLength": 1
+        },
         "kind": {
           "description": "METHOD for a method call, CONSTRUCTOR for new, this(...) and super(...), METHOD_REFERENCE for a method or constructor reference such as Order::getId.",
           "type": "string",
@@ -625,7 +630,7 @@
           "minimum": 1
         },
         "resolved": {
-          "description": "Whether the scanner resolved the target. When false, the target is the name as written in the source, e.g. because the library declaring it is not on the classpath.",
+          "description": "Whether the scanner resolved the target. When false, the target is the name as written in the source, e.g. because the library declaring it is not on the classpath; or, with module, because it is of a package.",
           "type": "boolean",
           "default": true
         }
@@ -648,7 +653,7 @@
           "minLength": 1
         },
         "value": {
-          "description": "The expression passed, as written in the source, with each run of whitespace, line breaks included, as one space: e.g. \"id\", \"\\\"/api/orders\\\"\" with its quotes, or \"`/api/orders/${id}`\" with its backticks. At most 200 characters: a longer one, such as a function passed as a callback, is cut off after 199 and ends in \"\u2026\". For a JSX attribute it is the expression between its braces, e.g. \"id\" for customerId={id}, the string with its quotes for title=\"Orders\", and \"true\" for an attribute without a value, as disabled in <Button disabled />. For a spread argument it is the expression spread, without the dots.",
+          "description": "The expression passed, as written in the source, with each run of whitespace, line breaks included, as one space: e.g. \"id\", \"\\\"/api/orders\\\"\" with its quotes, or \"`/api/orders/${id}`\" with its backticks. At most 200 characters: a longer one, such as a function passed as a callback, is cut off after 199 and ends in \"…\". For a JSX attribute it is the expression between its braces, e.g. \"id\" for customerId={id}, the string with its quotes for title=\"Orders\", and \"true\" for an attribute without a value, as disabled in <Button disabled />. For a spread argument it is the expression spread, without the dots.",
           "type": "string",
           "minLength": 1,
           "maxLength": 200
