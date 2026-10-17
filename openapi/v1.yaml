@@ -1594,6 +1594,83 @@ paths:
         "404":
           $ref: "#/components/responses/NotFound"
 
+  /api/v1/scans/{scanId}/package-exports:
+    parameters:
+      - name: scanId
+        in: path
+        required: true
+        description: The ID of the scan.
+        schema:
+          type: string
+          format: uuid
+    get:
+      operationId: listScanPackageExports
+      summary: List package exports
+      description: >-
+        What the scan's code uses of the packages it imports and does not scan,
+        such as Button of @acme/theme, with how often it is used. Its id is
+        what GET /scans/{scanId}/usages takes, to see where it is used.
+      tags:
+        - Scan Code
+      parameters:
+        - name: query
+          in: query
+          required: false
+          description: Only those whose qualified name contains this, ignoring case.
+          schema:
+            type: string
+        - name: package
+          in: query
+          required: false
+          description: Only those of the package with this name, such as @acme/theme.
+          schema:
+            type: string
+        - $ref: "#/components/parameters/Page"
+        - name: size
+          in: query
+          required: false
+          description: The number of items per page.
+          schema:
+            type: integer
+            format: int32
+            minimum: 1
+            maximum: 100
+            default: 50
+        - name: sort
+          in: query
+          required: false
+          description: The field to sort by.
+          schema:
+            type: string
+            enum:
+              - qualifiedName
+              - name
+              - usages
+            default: qualifiedName
+        - name: direction
+          in: query
+          required: false
+          description: The sort direction.
+          schema:
+            type: string
+            enum:
+              - asc
+              - desc
+            default: asc
+      responses:
+        "200":
+          description: A page of package exports.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ScanPackageExportPage"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
   /api/v1/scans/{scanId}/files:
     parameters:
       - name: scanId
@@ -2812,6 +2889,45 @@ components:
           type: integer
           minimum: 0
 
+    ScanPackageExport:
+      type: object
+      description: >-
+        What the scan's code uses of a package it imports and does not scan,
+        such as Button of @acme/theme.
+      required:
+        - id
+        - package
+        - module
+        - name
+        - qualifiedName
+        - usages
+        - files
+      properties:
+        id:
+          type: string
+        package:
+          type: string
+          description: The package, such as @acme/theme.
+        module:
+          type: string
+          description: >-
+            The module it is imported from as written: the package, or a
+            subpath of it such as @acme/theme/format.
+        name:
+          type: string
+          description: The name it is exported by, such as Button or Icons.Clock.
+        qualifiedName:
+          type: string
+          description: The module and the name, such as @acme/theme:Button.
+        usages:
+          type: integer
+          minimum: 0
+          description: The number of places that call, render or construct it.
+        files:
+          type: integer
+          minimum: 0
+          description: The number of files with such a place.
+
     ScanPackage:
       type: object
       description: A package of a scan.
@@ -3317,7 +3433,7 @@ components:
           description: Its id in the scan's graph, the focus of GET /scans/{scanId}/graph.
         type:
           type: string
-          description: Class, Method or Field.
+          description: Class, Method, Field, or PackageExport for what a package exports.
         name:
           type:
             - string
@@ -3720,6 +3836,17 @@ components:
               type: array
               items:
                 $ref: "#/components/schemas/ScanPackage"
+
+    ScanPackageExportPage:
+      allOf:
+        - $ref: "#/components/schemas/Page"
+        - type: object
+          additionalProperties: true
+          properties:
+            content:
+              type: array
+              items:
+                $ref: "#/components/schemas/ScanPackageExport"
 
     ScanFilePage:
       allOf:
