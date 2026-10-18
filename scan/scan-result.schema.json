@@ -37,11 +37,33 @@
         },
         "language": {
           "type": "string",
-          "enum": ["JAVA", "TYPESCRIPT", "JAVASCRIPT", "PYTHON", "GO", "RUST"]
+          "enum": [
+            "JAVA",
+            "TYPESCRIPT",
+            "JAVASCRIPT",
+            "PYTHON",
+            "GO",
+            "RUST",
+            "SQL"
+          ]
         },
         "languageVersion": {
           "type": "string",
-          "minLength": 1
+          "minLength": 1,
+          "description": "The version of the language, e.g. \"21\" for Java. For SQL, the version of the database the migrations are written for, e.g. \"17\" for PostgreSQL 17, or \"unknown\" when the scanner cannot tell."
+        },
+        "dialect": {
+          "description": "For SQL, the database the migrations are written for, from the driver or the Flyway or Liquibase configuration of the project, or from the SQL itself. Absent for other languages, and when the scanner cannot tell.",
+          "type": "string",
+          "enum": [
+            "POSTGRESQL",
+            "MYSQL",
+            "MARIADB",
+            "ORACLE",
+            "SQLSERVER",
+            "H2",
+            "SQLITE"
+          ]
         },
         "buildSystem": {
           "type": "string",
@@ -183,6 +205,17 @@
           "type": "array",
           "items": {
             "$ref": "#/$defs/TypeUse"
+          }
+        },
+        "migration": {
+          "description": "For a migration, as Flyway names its files, where it falls among the others: the server applies the migrations of a target in this order to know the tables they leave. Absent for a SQL file that is not a migration.",
+          "$ref": "#/$defs/Migration"
+        },
+        "statements": {
+          "description": "For a SQL file, its statements, in the order they are written, one entry each, also for those the scanner could not read. Absent for files of other languages.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Statement"
           }
         }
       }
@@ -1041,6 +1074,199 @@
         "endLine": ["startLine"],
         "startColumn": ["startLine"],
         "endColumn": ["endLine"]
+      }
+    },
+    "Migration": {
+      "description": "Where a migration falls among those of its target, from the name of its file, e.g. V13__notification_recipients.sql in Flyway.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind"],
+      "properties": {
+        "kind": {
+          "description": "VERSIONED: applied once, in the order of the versions, e.g. V13__name.sql. REPEATABLE: applied again whenever it changes, after the versioned ones, e.g. R__views.sql. UNDO: undoes the versioned migration of its version, e.g. U13__name.sql.",
+          "type": "string",
+          "enum": ["VERSIONED", "REPEATABLE", "UNDO"]
+        },
+        "version": {
+          "description": "The version, as written in the name of the file, e.g. \"13\" or \"2.1\"; compared part by part as numbers, so \"2.10\" comes after \"2.9\". Absent for a repeatable migration.",
+          "type": "string",
+          "minLength": 1
+        },
+        "description": {
+          "description": "The description from the name of the file, with underscores as spaces, e.g. \"notification recipients\".",
+          "type": "string"
+        }
+      }
+    },
+    "ColumnDefinition": {
+      "description": "A column as a statement defines it.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name"],
+      "properties": {
+        "name": {
+          "description": "The name of the column, unquoted and as written, e.g. \"user_id\".",
+          "type": "string",
+          "minLength": 1
+        },
+        "type": {
+          "description": "The type as written, in lower case, e.g. \"uuid\", \"varchar(255)\" or \"timestamp with time zone\".",
+          "type": "string",
+          "minLength": 1
+        },
+        "nullable": {
+          "description": "Whether the column takes null: false with NOT NULL or as part of the primary key. Absent when the statement does not say, as for ALTER COLUMN ... TYPE.",
+          "type": "boolean"
+        },
+        "primaryKey": {
+          "description": "Whether the column is, or is part of, the primary key of its table.",
+          "type": "boolean"
+        },
+        "unique": {
+          "description": "Whether the column is unique on its own.",
+          "type": "boolean"
+        },
+        "default": {
+          "description": "The default as written, e.g. \"now()\" or \"false\".",
+          "type": "string"
+        },
+        "foreignKey": {
+          "$ref": "#/$defs/ForeignKey"
+        }
+      }
+    },
+    "ForeignKey": {
+      "description": "The column another column references.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["table"],
+      "properties": {
+        "table": {
+          "description": "The table referenced, as in Statement.table.",
+          "type": "string",
+          "minLength": 1
+        },
+        "column": {
+          "description": "The column referenced; absent when the statement leaves it to the primary key of the table.",
+          "type": "string",
+          "minLength": 1
+        },
+        "onDelete": {
+          "description": "What deleting the referenced row does to the referencing ones; absent for NO ACTION.",
+          "type": "string",
+          "enum": ["CASCADE", "SET_NULL", "SET_DEFAULT", "RESTRICT"]
+        }
+      }
+    },
+    "ColumnChange": {
+      "description": "What an ALTER TABLE statement changes of a column.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "column"],
+      "properties": {
+        "kind": {
+          "description": "ADD and DROP add and remove the column; RENAME renames it to newName; ALTER_TYPE changes its type to that of definition; SET_NOT_NULL, DROP_NOT_NULL, SET_DEFAULT and DROP_DEFAULT change what it takes; ADD_FOREIGN_KEY and DROP_FOREIGN_KEY change what it references, as definition.foreignKey says.",
+          "type": "string",
+          "enum": [
+            "ADD",
+            "DROP",
+            "RENAME",
+            "ALTER_TYPE",
+            "SET_NOT_NULL",
+            "DROP_NOT_NULL",
+            "SET_DEFAULT",
+            "DROP_DEFAULT",
+            "ADD_FOREIGN_KEY",
+            "DROP_FOREIGN_KEY"
+          ]
+        },
+        "column": {
+          "description": "The column changed, by its name before the statement.",
+          "type": "string",
+          "minLength": 1
+        },
+        "newName": {
+          "description": "For RENAME, the new name of the column.",
+          "type": "string",
+          "minLength": 1
+        },
+        "definition": {
+          "description": "For ADD, the column added; for ALTER_TYPE, SET_DEFAULT and ADD_FOREIGN_KEY, what of it changes.",
+          "$ref": "#/$defs/ColumnDefinition"
+        }
+      }
+    },
+    "Statement": {
+      "description": "A SQL statement, as written in a file: what it does to the tables of the database, not the state they end up in, which the server works out from the migrations in order.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "startLine", "endLine", "parsed"],
+      "properties": {
+        "kind": {
+          "description": "What the statement does. OTHER for one that changes no table or view, such as INSERT, GRANT or CREATE FUNCTION, and for one the scanner could not read.",
+          "type": "string",
+          "enum": [
+            "CREATE_TABLE",
+            "ALTER_TABLE",
+            "DROP_TABLE",
+            "RENAME_TABLE",
+            "CREATE_VIEW",
+            "DROP_VIEW",
+            "CREATE_INDEX",
+            "DROP_INDEX",
+            "OTHER"
+          ]
+        },
+        "table": {
+          "description": "The table or view the statement creates, changes or drops, or the table of an index, unquoted, with its schema when written so, e.g. \"notification_recipients\" or \"billing.invoices\".",
+          "type": "string",
+          "minLength": 1
+        },
+        "newName": {
+          "description": "For RENAME_TABLE, the new name of the table.",
+          "type": "string",
+          "minLength": 1
+        },
+        "columns": {
+          "description": "For CREATE_TABLE, its columns, in order; for CREATE_INDEX, the columns indexed.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ColumnDefinition"
+          }
+        },
+        "changes": {
+          "description": "For ALTER_TABLE, what it changes of the columns, in order.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ColumnChange"
+          }
+        },
+        "references": {
+          "description": "The other tables the statement depends on: those a view reads, and those its foreign keys reference.",
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "ifExists": {
+          "description": "Whether it is written IF EXISTS or IF NOT EXISTS, so applies only to a table or view that exists, or does not.",
+          "type": "boolean"
+        },
+        "parsed": {
+          "description": "Whether the scanner read the statement. False for one it could not, such as of a dialect it does not know: kept with its lines and kind OTHER, so a report can say what it did not understand.",
+          "type": "boolean"
+        },
+        "startLine": {
+          "description": "The line the statement starts on, starting at 1.",
+          "type": "integer",
+          "minimum": 1
+        },
+        "endLine": {
+          "description": "The line the statement ends on, with its semicolon.",
+          "type": "integer",
+          "minimum": 1
+        }
       }
     }
   }
